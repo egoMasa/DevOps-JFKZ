@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0" version="29.2.7" pages="2">
-  <diagram name="Concept" id="s-R6Pmsx5IiYrLszBMRs">
-    <mxGraphModel dx="632" dy="788" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0" version="29.2.7" pages="2">
+  <diagram name="Archictecture système" id="s-R6Pmsx5IiYrLszBMRs">
+    <mxGraphModel dx="1375" dy="779" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -88,52 +88,58 @@
       </root>
     </mxGraphModel>
   </diagram>
-  <diagram id="S3GoP5KwQ9nbWlQeufyz" name="Ansible">
-    <mxGraphModel dx="632" dy="788" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <diagram id="S3GoP5KwQ9nbWlQeufyz" name="Ansible workflow">
+    <mxGraphModel dx="786" dy="445" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="v_Xihb7gZ6vSy1rrMuig-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="Hyperviseur" vertex="1">
-          <mxGeometry height="30" width="130" x="150" y="150" as="geometry" />
+        <mxCell id="v_Xihb7gZ6vSy1rrMuig-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="Hyperviseur (optionnel)" vertex="1">
+          <mxGeometry height="30" width="235" x="385" y="170" as="geometry" />
         </mxCell>
-        <mxCell id="v_Xihb7gZ6vSy1rrMuig-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="VM" vertex="1">
-          <mxGeometry height="30" width="130" x="422.5" y="150" as="geometry" />
+        <mxCell id="ALrr5ptbqNjxPCsz0YJf-1" edge="1" parent="1" source="v_Xihb7gZ6vSy1rrMuig-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="v_Xihb7gZ6vSy1rrMuig-18">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="v_Xihb7gZ6vSy1rrMuig-14" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffcd28;gradientColor=#ffa500;strokeColor=#d79b00;" value="proxmox_deploy_vms.yml" vertex="1">
-          <mxGeometry height="120" width="220" x="110" y="200" as="geometry" />
+          <mxGeometry height="120" width="230" x="155" y="170" as="geometry" />
         </mxCell>
         <mxCell id="v_Xihb7gZ6vSy1rrMuig-15" parent="v_Xihb7gZ6vSy1rrMuig-14" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Clonage template cloud-init dans hyperviseur" vertex="1">
-          <mxGeometry height="30" width="220" y="30" as="geometry" />
+          <mxGeometry height="90" width="230" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="v_Xihb7gZ6vSy1rrMuig-16" parent="v_Xihb7gZ6vSy1rrMuig-14" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Injection des paramètres VMs (IP,nom)" vertex="1">
-          <mxGeometry height="30" width="220" y="60" as="geometry" />
+        <mxCell id="Jc7AO0glcQvY794MgAje-5" edge="1" parent="1" source="v_Xihb7gZ6vSy1rrMuig-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="WhGIfUlABC-YfwTSptfr-5">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="v_Xihb7gZ6vSy1rrMuig-17" parent="v_Xihb7gZ6vSy1rrMuig-14" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="Item 3" vertex="1">
-          <mxGeometry height="30" width="220" y="90" as="geometry" />
+        <mxCell id="v_Xihb7gZ6vSy1rrMuig-18" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#cce5ff;strokeColor=#36393d;" value="vm_common_setup.yml" vertex="1">
+          <mxGeometry height="108" width="354" x="93" y="311" as="geometry" />
         </mxCell>
-        <mxCell id="v_Xihb7gZ6vSy1rrMuig-18" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#cce5ff;strokeColor=#36393d;" value="k8s_common_setup.yml" vertex="1">
-          <mxGeometry height="160" width="300" x="370" y="200" as="geometry" />
+        <mxCell id="v_Xihb7gZ6vSy1rrMuig-19" parent="v_Xihb7gZ6vSy1rrMuig-18" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;div align=&quot;left&quot;&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;11,0,0&quot;&gt;- Mise à jour des paquets&lt;br&gt;- Hardening OS :&amp;nbsp;&lt;br&gt;- Installation de podman&lt;br&gt;- Installation des outils kubernetes&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;br&gt;&lt;/li&gt;&lt;li&gt;&lt;br&gt;&lt;/li&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="78" width="354" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="v_Xihb7gZ6vSy1rrMuig-19" parent="v_Xihb7gZ6vSy1rrMuig-18" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;li&gt;&lt;p data-path-to-node=&quot;11,0,0&quot;&gt;&lt;b data-path-to-node=&quot;11,0,0&quot; data-index-in-node=&quot;0&quot;&gt;Système :&lt;/b&gt; Mise à jour et Hardening SSH/Firewall.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;11,1,0&quot;&gt;&lt;b data-path-to-node=&quot;11,1,0&quot; data-index-in-node=&quot;0&quot;&gt;Runtime :&lt;/b&gt; Installation de &lt;b data-path-to-node=&quot;11,1,0&quot; data-index-in-node=&quot;26&quot;&gt;Podman&lt;/b&gt; et configuration du moteur de conteneur.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;11,2,0&quot;&gt;&lt;b data-path-to-node=&quot;11,2,0&quot; data-index-in-node=&quot;0&quot;&gt;K8s Base :&lt;/b&gt; Installation des binaires &lt;code data-path-to-node=&quot;11,2,0&quot; data-index-in-node=&quot;37&quot;&gt;kubeadm&lt;/code&gt;, &lt;code data-path-to-node=&quot;11,2,0&quot; data-index-in-node=&quot;46&quot;&gt;kubelet&lt;/code&gt; et &lt;code data-path-to-node=&quot;11,2,0&quot; data-index-in-node=&quot;57&quot;&gt;kubectl&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;" vertex="1">
-          <mxGeometry height="130" width="300" y="30" as="geometry" />
+        <mxCell id="Jc7AO0glcQvY794MgAje-6" edge="1" parent="1" source="WhGIfUlABC-YfwTSptfr-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="WhGIfUlABC-YfwTSptfr-7">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="WhGIfUlABC-YfwTSptfr-5" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996185;gradientColor=#d5739d;" value="k8s_master_init.yml" vertex="1">
-          <mxGeometry height="160" width="300" x="370" y="370" as="geometry" />
+        <mxCell id="WhGIfUlABC-YfwTSptfr-5" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996185;gradientColor=#d5739d;" value="vm_master_setup.yml" vertex="1">
+          <mxGeometry height="96" width="395" x="75.5" y="456" as="geometry" />
         </mxCell>
-        <mxCell id="WhGIfUlABC-YfwTSptfr-6" parent="WhGIfUlABC-YfwTSptfr-5" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;li&gt;&lt;p data-path-to-node=&quot;15,0,0&quot;&gt;Exécute &lt;code data-path-to-node=&quot;15,0,0&quot; data-index-in-node=&quot;8&quot;&gt;kubeadm init&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;15,1,0&quot;&gt;Configure le fichier &lt;code data-path-to-node=&quot;15,1,0&quot; data-index-in-node=&quot;21&quot;&gt;kubeconfig&lt;/code&gt; pour l&#39;utilisateur.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;15,2,0&quot;&gt;Installe le plugin réseau (ex: Calico) pour que le cluster puisse respirer&lt;/p&gt;&lt;/li&gt;" vertex="1">
-          <mxGeometry height="130" width="300" y="30" as="geometry" />
+        <mxCell id="WhGIfUlABC-YfwTSptfr-6" parent="WhGIfUlABC-YfwTSptfr-5" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;li&gt;&lt;p data-path-to-node=&quot;15,0,0&quot;&gt;- Exécute &lt;code data-path-to-node=&quot;15,0,0&quot; data-index-in-node=&quot;8&quot;&gt;kubeadm init&lt;/code&gt;.&lt;br&gt;- Configure le fichier &lt;code data-path-to-node=&quot;15,1,0&quot; data-index-in-node=&quot;21&quot;&gt;kubeconfig&lt;/code&gt; pour l&#39;utilisateur.&lt;br&gt;- Installe le plugin réseau (ex: Calico) pour que le cluster puisse respirer&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;br&gt;&lt;/li&gt;" vertex="1">
+          <mxGeometry height="66" width="395" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Jc7AO0glcQvY794MgAje-7" edge="1" parent="1" source="WhGIfUlABC-YfwTSptfr-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="WhGIfUlABC-YfwTSptfr-9">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="WhGIfUlABC-YfwTSptfr-7" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="k8s_nodes_join.yml" vertex="1">
-          <mxGeometry height="90" width="300" x="370" y="540" as="geometry" />
-        </mxCell>
-        <mxCell id="WhGIfUlABC-YfwTSptfr-8" parent="WhGIfUlABC-YfwTSptfr-7" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;li&gt;&lt;p data-path-to-node=&quot;18,0,0&quot;&gt;Récupère le token généré par le master.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;18,1,0&quot;&gt;Exécute le &lt;code data-path-to-node=&quot;18,1,0&quot; data-index-in-node=&quot;11&quot;&gt;kubeadm join&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;" vertex="1">
-          <mxGeometry height="60" width="300" y="30" as="geometry" />
+          <mxGeometry height="90" width="300" x="123" y="656" as="geometry" />
         </mxCell>
         <mxCell id="WhGIfUlABC-YfwTSptfr-9" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996185;gradientColor=#d5739d;" value="k8s_deploy_nextcloud.yml" vertex="1">
-          <mxGeometry height="160" width="300" x="680" y="370" as="geometry" />
+          <mxGeometry height="160" width="300" x="123" y="776" as="geometry" />
         </mxCell>
         <mxCell id="WhGIfUlABC-YfwTSptfr-10" parent="WhGIfUlABC-YfwTSptfr-9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;Le master déploie sur ses nodes un cluster NextCloud avec les images préparés à l&#39;avance&lt;/div&gt;" vertex="1">
           <mxGeometry height="130" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Jc7AO0glcQvY794MgAje-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="VM Master" vertex="1">
+          <mxGeometry height="30" width="130" x="423" y="776" as="geometry" />
+        </mxCell>
+        <mxCell id="WhGIfUlABC-YfwTSptfr-8" parent="1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;li&gt;&lt;p data-path-to-node=&quot;18,0,0&quot;&gt;Récupère le token généré par le master.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;18,1,0&quot;&gt;Exécute le &lt;code data-path-to-node=&quot;18,1,0&quot; data-index-in-node=&quot;11&quot;&gt;kubeadm join&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;" vertex="1">
+          <mxGeometry height="60" width="300" x="123" y="686" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

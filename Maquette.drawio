@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0" version="29.2.7" pages="3">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0" version="29.2.7" pages="3">
   <diagram name="Archictecture système" id="s-R6Pmsx5IiYrLszBMRs">
     <mxGraphModel dx="2202" dy="779" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -102,19 +102,8 @@
       </root>
     </mxGraphModel>
   </diagram>
-  <diagram id="ydQUH4rIRzvouq3szs9r" name="Workflow chronologique">
-    <mxGraphModel dx="2202" dy="779" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="TcCgUK_-XPFMSm0yxibE-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
-          <mxGeometry height="60" width="120" x="-40" y="200" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
   <diagram id="S3GoP5KwQ9nbWlQeufyz" name="Ansible workflow">
-    <mxGraphModel dx="2546" dy="2143" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2439" dy="1975" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -159,6 +148,17 @@
         </mxCell>
         <mxCell id="WhGIfUlABC-YfwTSptfr-10" parent="WhGIfUlABC-YfwTSptfr-9" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" value="&lt;li&gt;&lt;p data-path-to-node=&quot;21,0,1,0,0&quot;&gt;&lt;b data-path-to-node=&quot;21,0,1,0,0&quot; data-index-in-node=&quot;0&quot;&gt;Gestion des Secrets :&lt;/b&gt; Créer les objets &lt;code data-path-to-node=&quot;21,0,1,0,0&quot; data-index-in-node=&quot;39&quot;&gt;Secrets&lt;/code&gt; Kubernetes pour les mots de passe de la BDD Nextcloud.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;21,0,1,1,0&quot;&gt;&lt;b data-path-to-node=&quot;21,0,1,1,0&quot; data-index-in-node=&quot;0&quot;&gt;Stockage :&lt;/b&gt; Créer les &lt;code data-path-to-node=&quot;21,0,1,1,0&quot; data-index-in-node=&quot;21&quot;&gt;PersistentVolumeClaims&lt;/code&gt; (PVC) pour que les données de Nextcloud ne soient pas perdues.&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;21,0,1,2,0&quot;&gt;&lt;b data-path-to-node=&quot;21,0,1,2,0&quot; data-index-in-node=&quot;0&quot;&gt;Déploiement :&lt;/b&gt; Appliquer les fichiers YAML pour :&lt;/p&gt;&lt;ol start=&quot;1&quot; data-path-to-node=&quot;21,0,1,2,1&quot;&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;21,0,1,2,1,0,0&quot;&gt;La base de données (MariaDB ou PostgreSQL).&lt;/p&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;21,0,1,2,1,1,0&quot;&gt;Le serveur Web Nextcloud.&lt;/p&gt;&lt;/li&gt;&lt;/ol&gt;&lt;/li&gt;&lt;li&gt;&lt;p data-path-to-node=&quot;21,0,1,3,0&quot;&gt;&lt;b data-path-to-node=&quot;21,0,1,3,0&quot; data-index-in-node=&quot;0&quot;&gt;Exposition :&lt;/b&gt; Créer un &lt;code data-path-to-node=&quot;21,0,1,3,0&quot; data-index-in-node=&quot;22&quot;&gt;Service&lt;/code&gt; (ou un Ingress) pour rendre Nextcloud accessible via un navigateur web.&lt;/p&gt;&lt;/li&gt;" vertex="1">
           <mxGeometry height="178" width="629" y="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="ydQUH4rIRzvouq3szs9r" name="Workflow chronologique">
+    <mxGraphModel dx="2202" dy="779" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="TcCgUK_-XPFMSm0yxibE-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="60" width="120" x="-40" y="200" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

@@ -107,24 +107,24 @@
     </mxGraphModel>
   </diagram>
   <diagram id="S3GoP5KwQ9nbWlQeufyz" name="Ansible workflow">
-    <mxGraphModel dx="947" dy="1693" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1373" dy="1929" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="WhGIfUlABC-YfwTSptfr-5" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="ubuntu24_hardening_nv1.yml" vertex="1">
-          <mxGeometry height="118" width="668" x="77" y="120" as="geometry" />
-        </mxCell>
         <mxCell id="WhGIfUlABC-YfwTSptfr-7" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_podman.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="83" y="435" as="geometry" />
+          <mxGeometry height="123" width="660" x="84" y="251" as="geometry" />
         </mxCell>
         <mxCell id="Bw6NdfXGYYp5b1Z1agXy-1" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="cis_ubuntu24_audit.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="83" y="276" as="geometry" />
+          <mxGeometry height="123" width="660" x="84" y="92" as="geometry" />
         </mxCell>
-        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-4" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="83" y="594" as="geometry" />
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-4" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s_master.yml" vertex="1">
+          <mxGeometry height="123" width="660" x="84" y="410" as="geometry" />
         </mxCell>
-        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-6" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;strokeColor=#006EAF;fontColor=#ffffff;" value="Terraform" vertex="1">
-          <mxGeometry height="123" width="660" x="83" y="-49" as="geometry" />
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-6" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;strokeColor=#006EAF;fontColor=#ffffff;align=center;" value="Terraform" vertex="1">
+          <mxGeometry height="98" width="660" x="83" y="-49" as="geometry" />
+        </mxCell>
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-10" parent="Bw6NdfXGYYp5b1Z1agXy-6" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div align=&quot;justify&quot;&gt;terraform init&lt;/div&gt;&lt;div align=&quot;justify&quot;&gt;terraform plan&lt;/div&gt;&lt;div align=&quot;justify&quot;&gt;terraform apply&lt;/div&gt;" vertex="1">
+          <mxGeometry height="68" width="660" y="30" as="geometry" />
         </mxCell>
         <mxCell id="Bw6NdfXGYYp5b1Z1agXy-7" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;strokeColor=#006EAF;fontColor=#ffffff;" value="Création VM template" vertex="1">
           <mxGeometry height="123" width="660" x="83" y="-346" as="geometry" />
@@ -133,7 +133,13 @@
           <mxGeometry height="123" width="660" x="83" y="-501" as="geometry" />
         </mxCell>
         <mxCell id="Bw6NdfXGYYp5b1Z1agXy-9" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="ubuntu24_hardening_nv1.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="83" y="-198" as="geometry" />
+          <mxGeometry height="97" width="660" x="83" y="-198" as="geometry" />
+        </mxCell>
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-11" parent="Bw6NdfXGYYp5b1Z1agXy-9" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="ansible-playbook -i inventory.template.ini -u proxmoxinit --private-key ~/.ssh/id_ed25519 --skip-tags ufw,firewall ubuntu24_hardening_nv1.yml" vertex="1">
+          <mxGeometry height="67" width="660" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-12" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s_nodes.yml" vertex="1">
+          <mxGeometry height="123" width="660" x="84" y="555" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

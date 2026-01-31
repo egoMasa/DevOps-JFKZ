@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0" version="29.3.6" pages="3">
   <diagram name="Archictecture système" id="s-R6Pmsx5IiYrLszBMRs">
-    <mxGraphModel dx="1427" dy="795" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1011" dy="563" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -131,7 +131,7 @@
         <mxCell id="HvevALndGCOZrOBwmuI5-6" edge="1" parent="1" source="HvevALndGCOZrOBwmuI5-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="HvevALndGCOZrOBwmuI5-5">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="HvevALndGCOZrOBwmuI5-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Container DB&lt;/b&gt;" vertex="1">
+        <mxCell id="HvevALndGCOZrOBwmuI5-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Container DB PostgreSQL&lt;/b&gt;" vertex="1">
           <mxGeometry height="204" width="60" x="1348.5" y="265" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-5" parent="1" style="image;aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;spacingTop=3;image=img/lib/active_directory/database.svg;" value="&lt;span&gt;Volume persistant&lt;/span&gt;" vertex="1">
@@ -148,14 +148,20 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="WhGIfUlABC-YfwTSptfr-7" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_podman.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="84" y="251" as="geometry" />
+        <mxCell id="WhGIfUlABC-YfwTSptfr-7" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s_master.yml" vertex="1">
+          <mxGeometry height="92" width="660" x="84" y="251" as="geometry" />
+        </mxCell>
+        <mxCell id="5GgvmT1bSiuGaMxHpwES-1" parent="WhGIfUlABC-YfwTSptfr-7" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;div align=&quot;left&quot;&gt;- Installation kubernetes&amp;nbsp;&lt;br&gt;- Configuration kubernetes pour le cluster&lt;br&gt;-&lt;/div&gt;" vertex="1">
+          <mxGeometry height="62" width="660" y="30" as="geometry" />
         </mxCell>
         <mxCell id="Bw6NdfXGYYp5b1Z1agXy-1" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="cis_ubuntu24_audit.yml" vertex="1">
           <mxGeometry height="123" width="660" x="84" y="92" as="geometry" />
         </mxCell>
-        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-4" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s_master.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="84" y="410" as="geometry" />
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-4" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s_nodes.yml" vertex="1">
+          <mxGeometry height="131" width="660" x="77" y="373" as="geometry" />
+        </mxCell>
+        <mxCell id="j8uD-ASd-au621iTRTei-1" parent="Bw6NdfXGYYp5b1Z1agXy-4" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;div align=&quot;left&quot;&gt;- Installation&amp;nbsp;&lt;b&gt;Kubelet +&amp;nbsp;&lt;/b&gt;&lt;b&gt;Kubeproxy + containerd&lt;/b&gt;&lt;/div&gt;&lt;div align=&quot;left&quot;&gt;&lt;b&gt;- Configuration des nodes et intégration au cluster&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="101" width="660" y="30" as="geometry" />
         </mxCell>
         <mxCell id="Bw6NdfXGYYp5b1Z1agXy-6" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;strokeColor=#006EAF;fontColor=#ffffff;align=center;" value="Terraform" vertex="1">
           <mxGeometry height="98" width="660" x="83" y="-49" as="geometry" />
@@ -175,8 +181,11 @@
         <mxCell id="Bw6NdfXGYYp5b1Z1agXy-11" parent="Bw6NdfXGYYp5b1Z1agXy-9" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="ansible-playbook -i inventory.template.ini -u proxmoxinit --private-key ~/.ssh/id_ed25519 --skip-tags ufw,firewall ubuntu24_hardening_nv1.yml" vertex="1">
           <mxGeometry height="67" width="660" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-12" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_k8s_nodes.yml" vertex="1">
-          <mxGeometry height="123" width="660" x="84" y="555" as="geometry" />
+        <mxCell id="Bw6NdfXGYYp5b1Z1agXy-12" parent="1" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#60a917;strokeColor=#2D7600;fontColor=#ffffff;" value="deploy_wikidb.yml" vertex="1">
+          <mxGeometry height="100" width="660" x="77" y="518" as="geometry" />
+        </mxCell>
+        <mxCell id="j8uD-ASd-au621iTRTei-2" parent="Bw6NdfXGYYp5b1Z1agXy-12" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;- Installation de podman&lt;/div&gt;&lt;div&gt;- Déploiement du conteneur de bdd du cluster&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="660" y="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

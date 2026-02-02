@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0" version="29.3.6" pages="2">
   <diagram name="Archictecture système" id="s-R6Pmsx5IiYrLszBMRs">
-    <mxGraphModel dx="449" dy="563" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1383" dy="644" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -43,7 +43,7 @@
         <mxCell id="SSTEmcYMPXZvws5SVMWK-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Pod wikijs-4&lt;/b&gt;" vertex="1">
           <mxGeometry height="149" width="60" x="1242" y="286" as="geometry" />
         </mxCell>
-        <mxCell id="pFh1zZUTIwlOwucsAa6u-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#3700CC;fillColor=#6a00ff;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="apiserver" vertex="1">
+        <mxCell id="pFh1zZUTIwlOwucsAa6u-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#3700CC;fillColor=#6a00ff;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="kube-apiserver" vertex="1">
           <mxGeometry height="30" width="115" x="798" y="485" as="geometry" />
         </mxCell>
         <mxCell id="pFh1zZUTIwlOwucsAa6u-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;VM3 : K8 Node&lt;/span&gt;&lt;/b&gt;" vertex="1">
@@ -64,7 +64,7 @@
         <mxCell id="pFh1zZUTIwlOwucsAa6u-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#3700CC;fillColor=#6a00ff;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="scheduler" vertex="1">
           <mxGeometry height="30" width="115" x="798" y="405" as="geometry" />
         </mxCell>
-        <mxCell id="pFh1zZUTIwlOwucsAa6u-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#3700CC;fillColor=#6a00ff;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="manager" vertex="1">
+        <mxCell id="pFh1zZUTIwlOwucsAa6u-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#3700CC;fillColor=#6a00ff;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="controller-manager" vertex="1">
           <mxGeometry height="30" width="115" x="798" y="365" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-8" edge="1" parent="1" source="pFh1zZUTIwlOwucsAa6u-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="HvevALndGCOZrOBwmuI5-1">
@@ -138,7 +138,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Container DB Postgre wikijs&lt;/b&gt;" vertex="1">
-          <mxGeometry height="148" width="60" x="1348.5" y="321" as="geometry" />
+          <mxGeometry height="148" width="142.5" x="1348.5" y="321" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-5" parent="1" style="image;aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;spacingTop=3;image=img/lib/active_directory/database.svg;" value="Volume persistant" vertex="1">
           <mxGeometry height="37" width="50" x="1537" y="376.5" as="geometry" />
@@ -178,6 +178,12 @@
         </mxCell>
         <mxCell id="6JczZY79xhK84T1d2nNE-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="::3000" vertex="1">
           <mxGeometry height="30" width="60" x="1242" y="287" as="geometry" />
+        </mxCell>
+        <mxCell id="6JczZY79xhK84T1d2nNE-6" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/icon-cache1/Web_browsers-2003/Firefox-1122.png" value="" vertex="1">
+          <mxGeometry height="128" width="128" x="581" y="107" as="geometry" />
+        </mxCell>
+        <mxCell id="6JczZY79xhK84T1d2nNE-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="http://wikijs.lab" vertex="1">
+          <mxGeometry height="30" width="82" x="607" y="235" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

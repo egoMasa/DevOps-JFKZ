@@ -76,31 +76,31 @@
           <mxGeometry height="75" width="150" x="155.5" y="699.5" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#005700;fillColor=#008a00;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;shadow=0;glass=0;" value="" vertex="1">
-          <mxGeometry height="318" width="332" x="1638" y="237" as="geometry" />
+          <mxGeometry height="318" width="332" x="1584" y="234" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(0, 0, 0));&quot;&gt;VM4 : BDD&lt;/span&gt;&lt;/b&gt;" vertex="1">
-          <mxGeometry height="30" width="110" x="1755" y="525" as="geometry" />
+          <mxGeometry height="30" width="110" x="1701" y="522" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#B20000;fillColor=#e51400;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;strong&gt;podman&lt;/strong&gt;" vertex="1">
-          <mxGeometry height="30" width="140" x="1648.5" y="483" as="geometry" />
+          <mxGeometry height="30" width="140" x="1594.5" y="480" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-10" edge="1" parent="1" source="HvevALndGCOZrOBwmuI5-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="HvevALndGCOZrOBwmuI5-5">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Container DB Postgre wikijs&lt;/b&gt;" vertex="1">
-          <mxGeometry height="148" width="142.5" x="1648.5" y="321" as="geometry" />
+          <mxGeometry height="148" width="142.5" x="1594.5" y="318" as="geometry" />
         </mxCell>
         <mxCell id="HvevALndGCOZrOBwmuI5-5" parent="1" style="image;aspect=fixed;perimeter=ellipsePerimeter;html=1;align=center;shadow=0;dashed=0;spacingTop=3;image=img/lib/active_directory/database.svg;" value="Volume persistant" vertex="1">
-          <mxGeometry height="37" width="50" x="1837" y="376.5" as="geometry" />
+          <mxGeometry height="37" width="50" x="1801" y="374.5" as="geometry" />
         </mxCell>
         <mxCell id="6JczZY79xhK84T1d2nNE-1" edge="1" parent="1" source="aDCU0gxF99MtpbwrC3rW-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="aDCU0gxF99MtpbwrC3rW-2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="::5432" vertex="1">
-          <mxGeometry height="30" width="60" x="1689.75" y="323" as="geometry" />
+          <mxGeometry height="30" width="60" x="1635.75" y="320" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.153" vertex="1">
-          <mxGeometry height="30" width="101.5" x="1757" y="237" as="geometry" />
+          <mxGeometry height="30" width="101.5" x="1703" y="234" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.151" vertex="1">
           <mxGeometry height="30" width="101.5" x="1098.25" y="237" as="geometry" />
@@ -109,7 +109,7 @@
           <mxGeometry height="30" width="101.5" x="768" y="329" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span&gt;/home/ansible/postgres-data&lt;/span&gt;" vertex="1">
-          <mxGeometry height="29" width="196" x="1764" y="346" as="geometry" />
+          <mxGeometry height="29" width="196" x="1724" y="343" as="geometry" />
         </mxCell>
         <mxCell id="6JczZY79xhK84T1d2nNE-6" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/icon-cache1/Web_browsers-2003/Firefox-1122.png" value="" vertex="1">
           <mxGeometry height="83" width="83" x="1191" y="-52" as="geometry" />
@@ -173,7 +173,7 @@
         <mxCell id="AvBLWwRUkqectGal54yv-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="::3000" vertex="1">
           <mxGeometry height="30" width="60" x="1493.75" y="290" as="geometry" />
         </mxCell>
-        <mxCell id="AvBLWwRUkqectGal54yv-15" edge="1" parent="1" source="pFh1zZUTIwlOwucsAa6u-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;endArrow=none;endFill=0;" target="AvBLWwRUkqectGal54yv-5">
+        <mxCell id="AvBLWwRUkqectGal54yv-15" edge="1" parent="1" source="pFh1zZUTIwlOwucsAa6u-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;endArrow=none;endFill=0;dashed=1;" target="AvBLWwRUkqectGal54yv-5">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1073" y="194" />
@@ -194,7 +194,7 @@
           <mxGeometry height="30" width="60" x="1112" y="293" as="geometry" />
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-32" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="::3000" vertex="1">
-          <mxGeometry height="30" width="60" x="1181.25" y="293" as="geometry" />
+          <mxGeometry height="30" width="60" x="1178" y="293" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

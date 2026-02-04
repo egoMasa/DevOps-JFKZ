@@ -111,9 +111,6 @@
         <mxCell id="aDCU0gxF99MtpbwrC3rW-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span&gt;/home/ansible/postgres-data&lt;/span&gt;" vertex="1">
           <mxGeometry height="29" width="196" x="1764" y="346" as="geometry" />
         </mxCell>
-        <mxCell id="6JczZY79xhK84T1d2nNE-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="::3000" vertex="1">
-          <mxGeometry height="30" width="60" x="1112" y="290" as="geometry" />
-        </mxCell>
         <mxCell id="6JczZY79xhK84T1d2nNE-6" parent="1" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/icon-cache1/Web_browsers-2003/Firefox-1122.png" value="" vertex="1">
           <mxGeometry height="83" width="83" x="1191" y="-52" as="geometry" />
         </mxCell>
@@ -134,9 +131,6 @@
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Pod wikijs-1&lt;/b&gt;" vertex="1">
           <mxGeometry height="148" width="60" x="1181.25" y="290" as="geometry" />
-        </mxCell>
-        <mxCell id="6JczZY79xhK84T1d2nNE-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="::3000" vertex="1">
-          <mxGeometry height="30" width="60" x="1181.25" y="290" as="geometry" />
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-27" edge="1" parent="1" source="AvBLWwRUkqectGal54yv-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="HvevALndGCOZrOBwmuI5-2">
           <mxGeometry relative="1" as="geometry" />
@@ -167,7 +161,7 @@
         <mxCell id="AvBLWwRUkqectGal54yv-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.152" vertex="1">
           <mxGeometry height="30" width="101.5" x="1387" y="237" as="geometry" />
         </mxCell>
-        <mxCell id="AvBLWwRUkqectGal54yv-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="::3000" vertex="1">
+        <mxCell id="AvBLWwRUkqectGal54yv-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="::3000" vertex="1">
           <mxGeometry height="30" width="60" x="1424.5" y="290" as="geometry" />
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#ae4132;fillColor=#fad9d5;align=center;verticalAlign=middle;rounded=1;" value="&lt;b&gt;Pod nginx ingress&lt;/b&gt;" vertex="1">
@@ -176,7 +170,7 @@
         <mxCell id="AvBLWwRUkqectGal54yv-13" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#001DBC;fillColor=#0050ef;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;b&gt;Pod wikijs-1&lt;/b&gt;" vertex="1">
           <mxGeometry height="148" width="60" x="1493.75" y="290" as="geometry" />
         </mxCell>
-        <mxCell id="AvBLWwRUkqectGal54yv-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="::3000" vertex="1">
+        <mxCell id="AvBLWwRUkqectGal54yv-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="::3000" vertex="1">
           <mxGeometry height="30" width="60" x="1493.75" y="290" as="geometry" />
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-15" edge="1" parent="1" source="pFh1zZUTIwlOwucsAa6u-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;endArrow=none;endFill=0;" target="AvBLWwRUkqectGal54yv-5">
@@ -195,6 +189,12 @@
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-24" parent="1" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#00188D;shape=mxgraph.azure.code_file" value="" vertex="1">
           <mxGeometry height="50" width="47" x="735" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="AvBLWwRUkqectGal54yv-31" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="::3000" vertex="1">
+          <mxGeometry height="30" width="60" x="1112" y="293" as="geometry" />
+        </mxCell>
+        <mxCell id="AvBLWwRUkqectGal54yv-32" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=light-dark(#000000,#000000);" value="::3000" vertex="1">
+          <mxGeometry height="30" width="60" x="1181.25" y="293" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

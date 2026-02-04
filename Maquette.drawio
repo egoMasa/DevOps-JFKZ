@@ -100,7 +100,7 @@
           <mxGeometry height="30" width="60" x="1689.75" y="323" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.153" vertex="1">
-          <mxGeometry height="30" width="101.5" x="1755" y="249.83" as="geometry" />
+          <mxGeometry height="30" width="101.5" x="1757" y="237" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.151" vertex="1">
           <mxGeometry height="30" width="101.5" x="1098.25" y="237" as="geometry" />
@@ -187,8 +187,8 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="AvBLWwRUkqectGal54yv-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="IP Virtuelle : 192.168.X.X/?&amp;nbsp;" vertex="1">
-          <mxGeometry height="30" width="163" x="1151" y="163" as="geometry" />
+        <mxCell id="AvBLWwRUkqectGal54yv-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="IP Virtuelle : 192.168.122.200/24" vertex="1">
+          <mxGeometry height="30" width="253" x="1105.5" y="162" as="geometry" />
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-23" parent="1" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#00188D;shape=mxgraph.azure.code_file" value="" vertex="1">
           <mxGeometry height="50" width="47" x="735" y="380" as="geometry" />

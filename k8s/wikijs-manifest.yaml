@@ -1,0 +1,155 @@
+# ============================================================
+# Wiki.js - Déploiement applicatif scalable (DB externalisée)
+# ============================================================
+
+# -------------------------------
+# Secret : credentials PostgreSQL
+# -------------------------------
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wikijs-db-secret
+  namespace: default
+type: Opaque
+stringData:
+  DB_USER: wikijs
+  DB_PASS: wikijs_password
+
+---
+# -------------------------------
+# Deployment Wiki.js
+# -------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wikijs
+  namespace: default
+spec:
+  replicas: 2   # Nombre MINIMUM de pods
+  selector:
+    matchLabels:
+      app: wikijs
+  template:
+    metadata:
+      labels:
+        app: wikijs
+    spec:
+      containers:
+        - name: wikijs
+          image: ghcr.io/requarks/wiki:2
+          ports:
+            - containerPort: 3000
+
+          # -------------------------------
+          # Ressources = clé du scaling
+          # -------------------------------
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+
+          env:
+            - name: DB_TYPE
+              value: postgres
+            - name: DB_HOST
+              value: "192.168.122.153"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: wikijs
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: wikijs-db-secret
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: wikijs-db-secret
+                  key: DB_PASS
+
+          # -------------------------------
+          # Probes = trafic seulement si prêt
+          # -------------------------------
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+
+---
+# -------------------------------
+# Service interne (ClusterIP)
+# -------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: wikijs
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: wikijs
+  ports:
+    - port: 80
+      targetPort: 3000
+
+---
+# -------------------------------
+# Ingress HTTP (Nginx)
+# -------------------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wikijs
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: wikijs.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wikijs
+                port:
+                  number: 80
+
+---
+# -------------------------------
+# HPA : Scaling automatique
+# -------------------------------
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: wikijs
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: wikijs
+
+  minReplicas: 2
+  maxReplicas: 4
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60

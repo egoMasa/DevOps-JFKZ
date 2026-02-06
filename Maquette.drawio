@@ -8,10 +8,10 @@
           <mxGeometry height="399" width="382.5" x="1358.5" y="153" as="geometry" />
         </mxCell>
         <mxCell id="pFh1zZUTIwlOwucsAa6u-13" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#005700;fillColor=#008a00;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="" vertex="1">
-          <mxGeometry height="397" width="382.5" x="961" y="158" as="geometry" />
+          <mxGeometry height="397" width="382.5" x="960.75" y="155" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;glass=0;fillColor=none;" value="" vertex="1">
-          <mxGeometry height="221" width="765" x="967" y="221" as="geometry" />
+          <mxGeometry height="221" width="370" x="967" y="221" as="geometry" />
         </mxCell>
         <mxCell id="srR4-yoNVpLq7UtWJ6Md-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6d8764;strokeColor=#3A5431;fontColor=#ffffff;" value="" vertex="1">
           <mxGeometry height="68" width="1434" x="81" y="791" as="geometry" />
@@ -202,7 +202,22 @@
           <mxGeometry height="41.699999999999996" width="51.6" x="1123.95" y="143" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-2" parent="1" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.nat_gateway;" value="" vertex="1">
-          <mxGeometry height="41.699999999999996" width="51.6" x="1514.7" y="139" as="geometry" />
+          <mxGeometry height="41.699999999999996" width="51.6" x="1525.7" y="139" as="geometry" />
+        </mxCell>
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.X.X" vertex="1">
+          <mxGeometry height="30" width="171" x="967" y="221" as="geometry" />
+        </mxCell>
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-8" edge="1" parent="1" source="KXTLVslNYSD6iD7wjgX0-5" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.537;entryY=1.013;entryDx=0;entryDy=0;entryPerimeter=0;fontSize=12;startSize=8;endSize=8;" target="KXTLVslNYSD6iD7wjgX0-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;glass=0;fillColor=none;" value="" vertex="1">
+          <mxGeometry height="221" width="370" x="1364.75" y="219" as="geometry" />
+        </mxCell>
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.X.X" vertex="1">
+          <mxGeometry height="30" width="171" x="1362" y="221" as="geometry" />
+        </mxCell>
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-11" edge="1" parent="1" source="KXTLVslNYSD6iD7wjgX0-9" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.471;entryY=0.911;entryDx=0;entryDy=0;entryPerimeter=0;fontSize=12;startSize=8;endSize=8;" target="KXTLVslNYSD6iD7wjgX0-2">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

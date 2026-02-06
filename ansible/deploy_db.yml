@@ -1,0 +1,248 @@
+# ============================================================
+# Playbook : VM4 Database | Podman ROOTLESS + PostgreSQL (Wiki.js)
+# Hôte     : tf-db-postgres
+# Fichier  : deploy_db.yml
+#
+# Objectifs (processus logique et justifiable) :
+# 1) Installer Podman rootless (uidmap, slirp4netns, fuse-overlayfs)
+# 2) Préparer un stockage persistant (data_dir)
+# 3) Déployer PostgreSQL (image officielle) avec variables compatibles Wiki.js
+# 4) Assurer la persistance "propre" via systemd --user (rootless) + linger
+# 5) Vérifier : conteneur running + pg_isready + requête SQL + port exposé
+# ============================================================
+
+- name: "DB VM | Podman rootless + PostgreSQL pour Wiki.js"
+  hosts: tf-db-postgres
+  become: true
+
+  vars:
+    # --- User rootless ---
+    podman_user: "ansible"
+    podman_home: "/home/ansible"
+
+    # --- PostgreSQL container ---
+    image_ref: "docker.io/library/postgres:16"
+    container_name: "postgres-db"
+
+    # --- Wiki.js DB settings (à réutiliser dans les manifests Wiki.js) ---
+    db_type: "postgres"
+    db_name: "wikijs"
+    db_user: "wikijs"
+    db_pass: "wikijs_password"
+    listen_port: "5432"
+
+    # --- Persistent storage (rootless-friendly) ---
+    data_dir: "/home/ansible/postgres-data"
+
+    # --- systemd rootless unit name ---
+    systemd_unit_name: "container-{{ container_name }}"
+
+    # --- Pare-feu (si UFW utilisé sur la VM DB) ---
+    # Si tu n'utilises pas UFW, laisse à false.
+    ufw_manage: false
+
+  tasks:
+    # ------------------------------------------------------------
+    # 0) Prérequis OS (Podman + rootless stack)
+    # ------------------------------------------------------------
+    - name: Install Podman and rootless dependencies
+      apt:
+        name:
+          - podman
+          - uidmap
+          - slirp4netns
+          - fuse-overlayfs
+          - iproute2
+          - ca-certificates
+          - curl
+          - jq
+        state: present
+        update_cache: true
+
+    - name: Ensure podman_user exists
+      user:
+        name: "{{ podman_user }}"
+        state: present
+        create_home: true
+
+    # Important pour que le service rootless survive aux reboots même sans session ouverte.
+    - name: Enable lingering for rootless user (required for user systemd services at boot)
+      command: "loginctl enable-linger {{ podman_user }}"
+      changed_when: false
+      failed_when: false
+
+    # ------------------------------------------------------------
+    # 1) Dossier persistant
+    # ------------------------------------------------------------
+    - name: Create persistent data directory (rootless)
+      file:
+        path: "{{ data_dir }}"
+        state: directory
+        owner: "{{ podman_user }}"
+        group: "{{ podman_user }}"
+        mode: "0700"
+
+    # ------------------------------------------------------------
+    # 2) Pull image (rootless context)
+    # ------------------------------------------------------------
+    - name: Podman version (rootless context)
+      become_user: "{{ podman_user }}"
+      command: podman --version
+      changed_when: false
+
+    - name: Pull PostgreSQL image (rootless)
+      become_user: "{{ podman_user }}"
+      command: "podman pull {{ image_ref }}"
+      register: pull_res
+      changed_when: "'Downloaded' in pull_res.stdout or 'Copying' in pull_res.stdout or 'Pulling' in pull_res.stdout"
+
+    # ------------------------------------------------------------
+    # 3) (Re)création du conteneur (rootless)
+    #     -> On garde ton approche simple : stop/rm/run
+    # ------------------------------------------------------------
+    - name: Check if container exists (rootless)
+      become_user: "{{ podman_user }}"
+      shell: |
+        podman ps -a --format '{{ "{{" }}.Names{{ "}}" }}' | grep -x "{{ container_name }}" || true
+      register: container_exists
+      changed_when: false
+
+    - name: Stop container if exists (rootless)
+      become_user: "{{ podman_user }}"
+      command: "podman stop {{ container_name }}"
+      when: container_exists.stdout != ""
+      failed_when: false
+
+    - name: Remove container if exists (rootless)
+      become_user: "{{ podman_user }}"
+      command: "podman rm {{ container_name }}"
+      when: container_exists.stdout != ""
+      failed_when: false
+
+    - name: Run PostgreSQL container (rootless, Wiki.js compatible env)
+      become_user: "{{ podman_user }}"
+      command: >
+        podman run -d
+        --name {{ container_name }}
+        -e POSTGRES_DB={{ db_name }}
+        -e POSTGRES_USER={{ db_user }}
+        -e POSTGRES_PASSWORD={{ db_pass }}
+        -v {{ data_dir }}:/var/lib/postgresql/data:Z
+        -p 0.0.0.0:{{ listen_port }}:5432
+        {{ image_ref }}
+      register: run_res
+
+    # ------------------------------------------------------------
+    # 4) Persistance propre via systemd --user (rootless)
+    #    -> plus robuste que --restart=always en rootless
+    # ------------------------------------------------------------
+    - name: Ensure systemd user directory exists
+      file:
+        path: "{{ podman_home }}/.config/systemd/user"
+        state: directory
+        owner: "{{ podman_user }}"
+        group: "{{ podman_user }}"
+        mode: "0755"
+
+    - name: Generate systemd unit for the container (rootless)
+      become_user: "{{ podman_user }}"
+      shell: |
+        set -e
+        podman generate systemd --new --name {{ container_name }} > {{ podman_home }}/.config/systemd/user/{{ systemd_unit_name }}.service
+      args:
+        executable: /bin/bash
+
+    - name: Reload user systemd daemon (rootless)
+      become_user: "{{ podman_user }}"
+      command: systemctl --user daemon-reload
+      changed_when: false
+      failed_when: false
+
+    - name: Enable + start container service (rootless systemd)
+      become_user: "{{ podman_user }}"
+      shell: |
+        set -e
+        systemctl --user enable --now {{ systemd_unit_name }}.service
+      args:
+        executable: /bin/bash
+
+    # ------------------------------------------------------------
+    # 5) Vérifs conteneur + logs si KO
+    # ------------------------------------------------------------
+    - name: Inspect container state (rootless)
+      become_user: "{{ podman_user }}"
+      shell: |
+        podman inspect -f '{{ "{{" }}.State.Status{{ "}}" }}' {{ container_name }}
+      register: c_state
+      changed_when: false
+      failed_when: false
+
+    - name: Show container logs if not running (rootless)
+      become_user: "{{ podman_user }}"
+      command: "podman logs --tail 200 {{ container_name }}"
+      register: c_logs
+      changed_when: false
+      when: c_state.stdout != "running"
+      failed_when: false
+
+    - name: Fail if container is not running (rootless)
+      fail:
+        msg: |
+          Container {{ container_name }} is not running (state={{ c_state.stdout }}).
+          Logs:
+          {{ c_logs.stdout | default('no logs') }}
+      when: c_state.stdout != "running"
+
+    # ------------------------------------------------------------
+    # 6) Readiness DB (pg_isready) + test SQL
+    # ------------------------------------------------------------
+    - name: Wait for PostgreSQL readiness (pg_isready) (rootless)
+      become_user: "{{ podman_user }}"
+      shell: |
+        podman exec {{ container_name }} pg_isready -U {{ db_user }} -d {{ db_name }}
+      register: pg_ready
+      retries: 60
+      delay: 2
+      until: pg_ready.rc == 0
+      changed_when: false
+
+    - name: Test SQL query (SELECT now()) (rootless)
+      become_user: "{{ podman_user }}"
+      shell: |
+        podman exec -i {{ container_name }} psql -U {{ db_user }} -d {{ db_name }} -c "SELECT now();"
+      register: sql_test
+      changed_when: false
+
+    # ------------------------------------------------------------
+    # 7) Vérifier exposition du port sur l'hôte
+    # ------------------------------------------------------------
+    - name: Ensure port {{ listen_port }} is listening on host
+      shell: |
+        ss -lntH sport = :{{ listen_port }} | awk '{print $4}' | grep -E '^(0\.0\.0\.0|\*)\:{{ listen_port }}$'
+      changed_when: false
+
+    # ------------------------------------------------------------
+    # 8) (Optionnel) Ouvrir le pare-feu UFW si utilisé
+    # ------------------------------------------------------------
+    - name: Allow PostgreSQL port in UFW (optional)
+      when: ufw_manage | bool
+      shell: |
+        ufw allow {{ listen_port }}/tcp
+        ufw status
+      changed_when: false
+
+    # ------------------------------------------------------------
+    # 9) Sortie “contrat” de paramètres pour Kubernetes/Wiki.js
+    # ------------------------------------------------------------
+    - name: Show DB connection parameters (for Kubernetes / Wiki.js)
+      debug:
+        msg:
+          - "DB_TYPE = {{ db_type }}"
+          - "DB_HOST = {{ ansible_default_ipv4.address }}"
+          - "DB_PORT = {{ listen_port }}"
+          - "DB_NAME = {{ db_name }}"
+          - "DB_USER = {{ db_user }}"
+          - "DB_PASS = {{ db_pass }}"
+          - "DATA_DIR = {{ data_dir }} (rootless)"
+          - "SYSTEMD_USER_UNIT = {{ systemd_unit_name }}.service"
+          - "Podman context = user {{ podman_user }}"

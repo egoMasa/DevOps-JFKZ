@@ -1,0 +1,227 @@
+# ============================================================
+# Playbook Ansible – Hardening CIS Ubuntu 24.04 (Niveau 1)
+# ------------------------------------------------------------
+# CONTEXTE D’USAGE :
+# - Golden Image / Template Proxmox
+# - Déploiement via Cloud-Init
+# - Plateforme de conteneurisation moderne :
+#     - Podman (mode rootless)
+#     - Kubernetes (control-plane & workers)
+#
+# OBJECTIFS :
+# - Appliquer le CIS Benchmark Niveau 1
+# - Maintenir une posture de sécurité élevée
+# - Garantir la compatibilité fonctionnelle avec :
+#     - cloud-init
+#     - SSH par clés (automatisation)
+#     - Podman rootless
+#     - kubelet / CNI / overlayfs
+#
+# PHILOSOPHIE :
+# - CIS est appliqué comme BASE DE SÉCURITÉ
+# - Toute règle incompatible avec la conteneurisation
+#   est explicitement désactivée et JUSTIFIÉE
+# - Les exceptions sont documentées et auditables
+#
+# MOMENT D’EXÉCUTION :
+# - AVANT conversion en template
+# - AVEC un utilisateur de build temporaire
+#   (ex: proxmoxinit, supprimé ensuite)
+# ============================================================
+
+- name: Application du Hardening CIS Niveau 1 (Container & Cloud Aware)
+  hosts: template
+  become: yes
+
+  vars:
+    # ============================================================
+    # PATCHES CIS – DÉSACTIVÉS VOLONTAIREMENT
+    # ------------------------------------------------------------
+    # Certains rôles CIS appliquent des patches automatiques
+    # (UFW, règles réseau).
+    #
+    # En environnement cloud / Kubernetes :
+    # - ces patches peuvent casser cloud-init
+    # - casser la connectivité réseau
+    #
+    # Décision :
+    # - Hardening déclaratif uniquement
+    # ============================================================
+    ubuntu24cis_apply_patches: false
+
+    # ============================================================
+    # WORKAROUNDS CLOUD IMAGE
+    # ------------------------------------------------------------
+    # Les images cloud :
+    # - n’ont pas encore tous les comptes définitifs
+    # - n’utilisent pas de mots de passe locaux
+    #
+    # Ces options évitent :
+    # - des échecs Ansible
+    # - des contrôles non pertinents
+    # ============================================================
+    ubuntu24cis_skip_prelim: true
+    ubuntu24cis_ignore_password_check: true
+
+    # Bug connu / règle redondante dans certaines versions du rôle
+    ubuntu24cis_rule_5_2_4: false
+    ubtu24cis_rule_5_2_4: false
+
+    # ============================================================
+    # FIREWALL
+    # ------------------------------------------------------------
+    # UFW est désactivé :
+    # - Firewall géré au niveau infra / cloud
+    # - Kubernetes et les CNI gèrent le réseau
+    #
+    # Objectif :
+    # - Aucun conflit kube-proxy / CNI / overlay
+    # ============================================================
+    ubuntu24cis_firewall: false
+
+    # ============================================================
+    # PAM / PASSWORD POLICY
+    # ------------------------------------------------------------
+    # Accès exclusivement par clés SSH.
+    # Les politiques de mots de passe locaux :
+    # - sont inutiles en cloud
+    # - provoquent des erreurs au build
+    # ============================================================
+    ubuntu24cis_rule_5_4_1_1: false
+    ubuntu24cis_rule_5_4_1_2: false
+    ubuntu24cis_rule_5_4_1_3: false
+    ubuntu24cis_rule_5_4_1_4: false
+    ubuntu24cis_rule_5_4_2: false
+
+    # ============================================================
+    # ACCÈS SSH
+    # ------------------------------------------------------------
+    # Accès strictement contrôlé :
+    # - Utilisateur d’automatisation uniquement
+    # - Authentification par clés
+    # - Membres du groupe sudo uniquement
+    # ============================================================
+    ubuntu24cis_ssh_allow_users: ['ansible']
+    ubuntu24cis_ssh_allow_groups: ['sudo']
+
+    # ============================================================
+    # FILESYSTEM – COMPATIBILITÉ CLOUD IMAGE
+    # ------------------------------------------------------------
+    # CIS suppose souvent des partitions dédiées
+    # incompatibles avec les cloud images.
+    #
+    # Désactivation pour éviter :
+    # - boot cassé
+    # - init bloqué
+    # ============================================================
+    ubuntu24cis_section1_patch: true
+    ubuntu24cis_rule_1_1_2_1_1: false
+    ubuntu24cis_rule_1_1_2_2_1: false
+    ubuntu24cis_rule_1_1_2_3_1: false
+    ubuntu24cis_rule_1_1_2_4_1: false
+    ubuntu24cis_rule_1_1_2_6_1: false
+
+    # ============================================================
+    # FILESYSTEM – NOEXEC (KUBERNETES / PODMAN)
+    # ------------------------------------------------------------
+    # Kubernetes et Podman exécutent des binaires temporaires
+    # dans /var/lib et /tmp.
+    # ============================================================
+    ubuntu24cis_rule_1_1_3_3: false   # /tmp noexec
+    ubuntu24cis_rule_1_1_10: false    # /var noexec
+
+    # ============================================================
+    # KERNEL MODULES – CONTENEURISATION (CRITIQUE)
+    # ------------------------------------------------------------
+    # overlayfs est indispensable pour Kubernetes et Podman.
+    # Toute blacklist rend le cluster inutilisable.
+    # ============================================================
+    ubuntu24cis_rule_1_1_1_1: false   # Squashfs conservé
+    ubuntu24cis_rule_1_1_24: false    # Overlayfs (VITAL)
+
+    # ============================================================
+    # RÉSEAU / IPV6
+    # ------------------------------------------------------------
+    # IPv6 conservé pour compatibilité CNI / dual-stack.
+    # ============================================================
+    ubuntu24cis_rule_3_3_1: false
+    ubuntu24cis_ipv6_required: true
+
+    # ============================================================
+    # SYSCTL – CONTAINERS & KUBERNETES (CRITIQUE)
+    # ------------------------------------------------------------
+    # Ces paramètres sont indispensables :
+    # - Podman rootless
+    # - Routage inter-pods Kubernetes
+    # - Fonctionnement des CNI
+    # ============================================================
+    ubuntu24cis_sysctl_overrides:
+      kernel.unprivileged_userns_clone: 1
+      net.ipv4.ip_forward: 1
+      net.bridge.bridge-nf-call-iptables: 1
+
+    # ============================================================
+    # SUID / GUID – PODMAN ROOTLESS
+    # ------------------------------------------------------------
+    # newuidmap / newgidmap doivent conserver le bit SUID
+    # pour permettre le mapping UID/GID rootless.
+    # ============================================================
+    ubuntu24cis_whitelist_suid:
+      - /usr/bin/newuidmap
+      - /usr/bin/newgidmap
+      - /usr/bin/sudo
+
+  # ============================================================
+  # APPLICATION DU RÔLE CIS
+  # ============================================================
+  roles:
+    - role: roles/ubuntu24_cis
+
+  # ============================================================
+  # POST-HARDENING FIXES – FILET DE SÉCURITÉ CONTAINER
+  # ------------------------------------------------------------
+  # Ces tâches garantissent que l’image est immédiatement
+  # compatible Podman & Kubernetes, même si ces outils
+  # sont installés plus tard.
+  # ============================================================
+  post_tasks:
+
+    # ------------------------------------------------------------
+    # Permissions standards sur /usr/lib
+    # ------------------------------------------------------------
+    - name: "POST-HARDENING | Permissions de base sur /usr/lib"
+      ansible.builtin.file:
+        path: /usr/lib/x86_64-linux-gnu/
+        state: directory
+        mode: '0755'
+        recurse: no
+
+    # ------------------------------------------------------------
+    # Correction des bibliothèques libsubid
+    # ------------------------------------------------------------
+    # Évite les erreurs 'Permission denied' lors
+    # de l’installation future de Podman rootless.
+    # ------------------------------------------------------------
+    - name: "POST-HARDENING | Droits lecture libsubid"
+      ansible.builtin.file:
+        path: "/usr/lib/x86_64-linux-gnu/{{ item }}"
+        mode: '0644'
+      loop:
+        - libsubid.so.4
+        - libsubid.so.4.0.0
+      ignore_errors: yes
+
+    # ------------------------------------------------------------
+    # Forcer les bits SUID requis pour les containers rootless
+    # ------------------------------------------------------------
+    # Ces binaires peuvent être présents AVANT Podman
+    # (paquet uidmap). On force les droits par sécurité.
+    # ------------------------------------------------------------
+    - name: "POST-HARDENING | Forcer les bits SUID (uidmap)"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: '4755'
+      loop:
+        - /usr/bin/newuidmap
+        - /usr/bin/newgidmap
+      ignore_errors: yes

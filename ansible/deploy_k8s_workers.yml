@@ -1,0 +1,259 @@
+# ============================================================
+# Playbook : Installation des WORKERS + Join Cluster
+# Fichier  : deploy_k8s_workers.yml
+#
+# Objectifs :
+# 1) OS baseline K8s (swap, modules, sysctl overlay + VIP L2)
+# 2) Runtime containerd (SystemdCgroup=true) + utils réseau
+# 3) kubeadm/kubelet (v1.29)
+# 4) Join cluster (idempotent)
+# 5) Post-check depuis master (Ready + calico-node OK)
+# ============================================================
+
+- name: "K8S WORKERS | Installation + Join"
+  hosts: k8s_nodes
+  become: true
+
+  vars:
+    k8s_minor_version: "1.29"
+    join_cmd_local_path: "./artifacts/join-workers.sh"
+
+    # LAB switch
+    force_reset: false
+
+  pre_tasks:
+    - name: Read join command from controller
+      delegate_to: localhost
+      run_once: true
+      become: false
+      slurp:
+        src: "{{ join_cmd_local_path }}"
+      register: join_file
+
+    - name: Extract join command
+      delegate_to: localhost
+      run_once: true
+      become: false
+      set_fact:
+        join_command: >-
+          {{
+            (join_file.content | b64decode).splitlines()
+            | reject('match','^#')
+            | reject('match','^\\s*$')
+            | list
+            | last
+          }}
+
+    - name: Show join command
+      delegate_to: localhost
+      run_once: true
+      become: false
+      debug:
+        msg: "JOIN_CMD => {{ join_command }}"
+
+  tasks:
+
+    # ------------------------------------------------------------
+    # 1) Swap OFF
+    # ------------------------------------------------------------
+    - name: Disable swap (runtime)
+      command: swapoff -a
+      when: ansible_swaptotal_mb | int > 0
+
+    - name: Disable swap permanently
+      replace:
+        path: /etc/fstab
+        regexp: '^\s*([^#].*\sswap\s.*)$'
+        replace: '# \1'
+
+    # ------------------------------------------------------------
+    # 2) Kernel modules + sysctl (IDENTIQUE MASTER)
+    # ------------------------------------------------------------
+    - name: Load kernel modules
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Persist kernel modules
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+        mode: "0644"
+
+    - name: Configure sysctl for Kubernetes networking
+      copy:
+        dest: /etc/sysctl.d/k8s.conf
+        content: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward                 = 1
+
+          # Calico VXLAN / NAT
+          net.ipv4.conf.all.rp_filter         = 0
+          net.ipv4.conf.default.rp_filter     = 0
+
+          # MetalLB L2 readiness
+          net.ipv4.conf.all.send_redirects    = 0
+          net.ipv4.conf.default.send_redirects= 0
+          net.ipv4.conf.all.arp_ignore        = 1
+          net.ipv4.conf.all.arp_announce      = 2
+        mode: "0644"
+
+    - name: Apply sysctl
+      command: sysctl --system
+
+    - name: Ensure br_netfilter active
+      stat:
+        path: /proc/sys/net/bridge/bridge-nf-call-iptables
+      register: bridge_sysctl
+
+    - name: Fail if br_netfilter missing
+      fail:
+        msg: "br_netfilter not active"
+      when: not bridge_sysctl.stat.exists
+
+    # ------------------------------------------------------------
+    # 3) containerd + outils réseau
+    # ------------------------------------------------------------
+    - name: Install containerd and networking utils
+      apt:
+        name:
+          - containerd
+          - conntrack
+          - ipset
+          - iptables
+          - iproute2
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure containerd config dir
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: "0755"
+
+    - name: Generate default containerd config
+      shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Enable systemd cgroup driver
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: 'SystemdCgroup = false'
+        replace: 'SystemdCgroup = true'
+      notify: Restart containerd
+
+    - name: Ensure containerd running
+      systemd:
+        name: containerd
+        state: started
+        enabled: true
+
+    # ------------------------------------------------------------
+    # 4) Kubernetes packages
+    # ------------------------------------------------------------
+    - name: Ensure apt keyrings dir
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Kubernetes apt key
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/Release.key \
+        | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Add Kubernetes repo
+      copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: |
+          deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor_version }}/deb/ /
+        mode: "0644"
+
+    - name: Install kubeadm + kubelet
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+        state: present
+        update_cache: true
+
+    - name: Hold Kubernetes packages
+      command: apt-mark hold kubelet kubeadm
+
+    # ------------------------------------------------------------
+    # 5) Reset optionnel
+    # ------------------------------------------------------------
+    - name: Reset node (LAB)
+      command: kubeadm reset -f
+      when: force_reset | bool
+
+    - name: Remove CNI config (LAB)
+      file:
+        path: /etc/cni/net.d
+        state: absent
+      when: force_reset | bool
+
+    # ------------------------------------------------------------
+    # 6) Join cluster
+    # ------------------------------------------------------------
+    - name: Check if already joined
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join the cluster
+      command: "{{ join_command }}"
+      when: not kubelet_conf.stat.exists
+
+    - name: Ensure kubelet running
+      systemd:
+        name: kubelet
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart containerd
+      systemd:
+        name: containerd
+        state: restarted
+
+# ============================================================
+# Post-check depuis le MASTER
+# ============================================================
+
+- name: "K8S CLUSTER | Validation post-join"
+  hosts: tf-k8s-master
+  become: true
+
+  vars:
+    kubeconfig_user: "ansible"
+
+  tasks:
+    - name: Wait for all nodes Ready
+      become_user: "{{ kubeconfig_user }}"
+      shell: |
+        for i in $(seq 1 60); do
+          NOTREADY=$(kubectl get nodes --no-headers | awk '$2!="Ready"{print $1}')
+          [ -z "$NOTREADY" ] && kubectl get nodes -o wide && exit 0
+          sleep 5
+        done
+        exit 1
+      args:
+        executable: /bin/bash
+
+    - name: Ensure calico-node stable on all nodes
+      become_user: "{{ kubeconfig_user }}"
+      command: kubectl -n kube-system rollout status ds/calico-node --timeout=180s
+      changed_when: false

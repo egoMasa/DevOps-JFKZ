@@ -1,0 +1,195 @@
+# ============================================================
+# Audit CIS Ubuntu 24.04 – Niveau 1
+# ------------------------------------------------------------
+# Objectif :
+# - Lancer un audit CIS automatisé sur l’ensemble du cluster
+#   Kubernetes (master + workers)
+# - Générer un rapport COMPLET côté VM
+# - Rapatrier les résultats localement pour archivage / analyse
+#
+# Outils utilisés :
+# - GOSS : moteur de tests de conformité
+# - Scripts CIS personnalisés (run_audit.sh)
+# ============================================================
+
+- name: Audit CIS Niveau 1 - Scan & Collect
+  hosts: k8s_cluster
+  become: yes
+
+  # ----------------------------------------------------------
+  # Variables globales de l'audit
+  # ----------------------------------------------------------
+  vars:
+    # Version du binaire GOSS utilisée pour l’audit
+    goss_version: "v0.4.4"
+
+    # Dossier de travail sur la VM distante
+    # Contient les tests, scripts et résultats CIS
+    audit_dir: "/opt/UBUNTU24-CIS-Audit"
+
+    # Dossier local où les rapports seront rapatriés
+    local_report_dir: "./reports"
+
+    # Timestamp pour versionner proprement les rapports
+    # Exemple : 03_01_2026_21h42
+    audit_datetime: "{{ lookup('pipe', 'date +%d_%m_%Y_%Hh%M') }}"
+
+  # ----------------------------------------------------------
+  # Variables d’environnement Ansible
+  # ----------------------------------------------------------
+  environment:
+    # Désactive les warnings de dépréciation pour garder
+    # une sortie lisible lors de l’audit
+    ANSIBLE_DEPRECATION_WARNINGS: "False"
+
+  tasks:
+
+    # --------------------------------------------------------
+    # 0. Nettoyage des anciens rapports CIS sur la VM
+    # --------------------------------------------------------
+    # - Supprime les rapports précédents pour éviter toute
+    #   confusion entre anciens et nouveaux audits
+    # - Ignore les erreurs si aucun fichier n’est présent
+    # --------------------------------------------------------
+    - name: 0. Nettoyer les anciens rapports CIS sur la VM distante
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ lookup('ansible.builtin.fileglob', '/opt/audit_*CIS*.documentation', wantlist=True) }}"
+      ignore_errors: yes
+
+    # --------------------------------------------------------
+    # 1. Installation de rsync
+    # --------------------------------------------------------
+    # - Nécessaire pour le module synchronize
+    # - Utilisé pour copier efficacement les tests CIS
+    # --------------------------------------------------------
+    - name: 1. Installer rsync pour le transfert
+      apt:
+        name: rsync
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    # --------------------------------------------------------
+    # 2. Préparation de l’environnement d’audit
+    # --------------------------------------------------------
+    # - Création du dossier de travail CIS
+    # - Permissions standard lisibles/exécutables
+    # --------------------------------------------------------
+    - name: 2. Préparer l'environnement d'audit
+      file:
+        path: "{{ audit_dir }}"
+        state: directory
+        mode: '0755'
+
+
+    # --------------------------------------------------------
+    # 3. Installation du binaire GOSS
+    # --------------------------------------------------------
+    # - Téléchargement depuis GitHub (binaire officiel)
+    # - Installation dans /usr/local/bin
+    # - Rendu exécutable
+    # --------------------------------------------------------
+    - name: 3. Installer le binaire GOSS
+      get_url:
+        url: "https://github.com/goss-org/goss/releases/download/{{ goss_version }}/goss-linux-amd64"
+        dest: /usr/local/bin/goss
+        mode: '0755'
+
+    # --------------------------------------------------------
+    # 4. Synchronisation des tests CIS
+    # --------------------------------------------------------
+    # - Copie du rôle local contenant :
+    #   - fichiers GOSS
+    #   - scripts run_audit.sh
+    #   - règles CIS Ubuntu 24
+    # - Exclusion du dossier .git si présent
+    # --------------------------------------------------------
+    - name: 4. Synchroniser les tests CIS
+      synchronize:
+        src: "roles/ubuntu24_cis_audit/"
+        dest: "{{ audit_dir }}/"
+        recursive: yes
+        rsync_opts:
+          - "--exclude=.git"
+
+    # --------------------------------------------------------
+    # 5. Exécution de l’audit CIS (rapport COMPLET)
+    # --------------------------------------------------------
+    # - Lance le script d’audit principal
+    # - Génère un rapport détaillé de type "documentation"
+    # - changed_when=false car il s’agit d’un audit (read-only)
+    # --------------------------------------------------------
+    - name: 5. Lancer l'audit CIS (rapport COMPLET)
+      shell: "bash run_audit.sh -f documentation"
+      args:
+        chdir: "{{ audit_dir }}"
+      register: audit_output
+      changed_when: false
+
+    # --------------------------------------------------------
+    # 6. Extraction du chemin du rapport généré
+    # --------------------------------------------------------
+    # - Parse la sortie standard du script
+    # - Récupère dynamiquement le chemin exact du rapport
+    # --------------------------------------------------------
+    - name: 6. Extraire le chemin du rapport CIS généré
+      set_fact:
+        cis_report_path: >-
+          {{ audit_output.stdout_lines
+             | select('search', 'Completed file can be found at')
+             | map('regex_replace', '.*at ', '')
+             | list
+             | first }}
+
+    # --------------------------------------------------------
+    # 7. Vérification de l’existence du rapport
+    # --------------------------------------------------------
+    # - Sécurité avant rapatriement
+    # - Évite un fetch sur un fichier absent
+    # --------------------------------------------------------
+    - name: 7. Vérifier que le rapport CIS complet existe
+      stat:
+        path: "{{ cis_report_path }}"
+      register: cis_report_stat
+
+    # --------------------------------------------------------
+    # 8. Création du dossier local de stockage
+    # --------------------------------------------------------
+    # - Créé côté machine Ansible (localhost)
+    # - Un dossier par hôte audité
+    # --------------------------------------------------------
+    - name: 8. Créer le dossier de stockage local
+      delegate_to: localhost
+      become: no
+      file:
+        path: "{{ local_report_dir }}/{{ inventory_hostname }}"
+        state: directory
+        mode: '0755'
+
+    # --------------------------------------------------------
+    # 9. Rapatriement du rapport CIS COMPLET
+    # --------------------------------------------------------
+    # - Télécharge le rapport depuis la VM
+    # - Nom horodaté pour traçabilité
+    # --------------------------------------------------------
+    - name: 9. Rapatrier le RAPPORT CIS COMPLET en local
+      fetch:
+        src: "{{ cis_report_path }}"
+        dest: "{{ local_report_dir }}/{{ inventory_hostname }}/cis_audit_result_{{ audit_datetime }}.txt"
+        flat: yes
+      when: cis_report_stat.stat.exists
+
+    # --------------------------------------------------------
+    # 10. Résumé final de l’audit
+    # --------------------------------------------------------
+    # - Affiche le score CIS
+    # - Confirme l’emplacement du rapport local
+    # --------------------------------------------------------
+    - name: 10. Résumé de l'audit (Score précis)
+      debug:
+        msg:
+          - "Audit terminé pour {{ inventory_hostname }}"
+          - "Fichier local : {{ local_report_dir }}/{{ inventory_hostname }}/cis_audit_result_{{ audit_datetime }}.txt"
+          - "Score : {{ audit_output.stdout_lines | select('search', 'Count:') | list | first }}"

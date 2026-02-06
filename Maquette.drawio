@@ -97,7 +97,7 @@
         <mxCell id="aDCU0gxF99MtpbwrC3rW-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.153" vertex="1">
           <mxGeometry height="30" width="101.5" x="1870" y="234" as="geometry" />
         </mxCell>
-        <mxCell id="aDCU0gxF99MtpbwrC3rW-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.151" vertex="1">
+        <mxCell id="aDCU0gxF99MtpbwrC3rW-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.151/24" vertex="1">
           <mxGeometry height="30" width="101.5" x="1099" y="119" as="geometry" />
         </mxCell>
         <mxCell id="aDCU0gxF99MtpbwrC3rW-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.150" vertex="1">
@@ -174,7 +174,7 @@
         <mxCell id="AvBLWwRUkqectGal54yv-42" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#B20000;fillColor=#e51400;align=center;verticalAlign=middle;rounded=1;fontColor=#ffffff;" value="&lt;div&gt;&lt;strong data-start=&quot;501&quot; data-end=&quot;515&quot;&gt;containerd&lt;/strong&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="30" width="348" x="1368.5" y="445" as="geometry" />
         </mxCell>
-        <mxCell id="AvBLWwRUkqectGal54yv-43" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.152" vertex="1">
+        <mxCell id="AvBLWwRUkqectGal54yv-43" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="192.168.122.152/24" vertex="1">
           <mxGeometry height="30" width="101.5" x="1489.75" y="115" as="geometry" />
         </mxCell>
         <mxCell id="AvBLWwRUkqectGal54yv-44" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#ae4132;fillColor=#fad9d5;align=center;verticalAlign=middle;rounded=1;" value="&lt;b&gt;Pod nginx ingress (HA)&lt;/b&gt;" vertex="1">
@@ -204,20 +204,20 @@
         <mxCell id="KXTLVslNYSD6iD7wjgX0-2" parent="1" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.nat_gateway;" value="" vertex="1">
           <mxGeometry height="41.699999999999996" width="51.6" x="1525.7" y="139" as="geometry" />
         </mxCell>
-        <mxCell id="KXTLVslNYSD6iD7wjgX0-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.X.X" vertex="1">
-          <mxGeometry height="30" width="171" x="967" y="221" as="geometry" />
-        </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-8" edge="1" parent="1" source="KXTLVslNYSD6iD7wjgX0-5" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.537;entryY=1.013;entryDx=0;entryDy=0;entryPerimeter=0;fontSize=12;startSize=8;endSize=8;" target="KXTLVslNYSD6iD7wjgX0-1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;glass=0;fillColor=none;" value="" vertex="1">
           <mxGeometry height="221" width="370" x="1364.75" y="219" as="geometry" />
         </mxCell>
-        <mxCell id="KXTLVslNYSD6iD7wjgX0-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.X.X" vertex="1">
-          <mxGeometry height="30" width="171" x="1362" y="221" as="geometry" />
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.0.0/16" vertex="1">
+          <mxGeometry height="30" width="171" x="1364.75" y="219" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-11" edge="1" parent="1" source="KXTLVslNYSD6iD7wjgX0-9" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.471;entryY=0.911;entryDx=0;entryDy=0;entryPerimeter=0;fontSize=12;startSize=8;endSize=8;" target="KXTLVslNYSD6iD7wjgX0-2">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.0.0/16" vertex="1">
+          <mxGeometry height="30" width="171" x="967" y="221" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

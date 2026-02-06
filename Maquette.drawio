@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0" version="29.3.7" pages="2">
   <diagram name="Archictecture système" id="s-R6Pmsx5IiYrLszBMRs">
-    <mxGraphModel dx="1216" dy="1863" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="720" dy="2037" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -199,7 +199,7 @@
           <mxGeometry height="30" width="63" x="1371.5" y="290" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-1" parent="1" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.nat_gateway;" value="" vertex="1">
-          <mxGeometry height="41.699999999999996" width="51.6" x="1123.95" y="143" as="geometry" />
+          <mxGeometry height="41.699999999999996" width="51.6" x="1123.95" y="141" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-2" parent="1" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.nat_gateway;" value="" vertex="1">
           <mxGeometry height="41.699999999999996" width="51.6" x="1525.7" y="139" as="geometry" />
@@ -210,13 +210,13 @@
         <mxCell id="KXTLVslNYSD6iD7wjgX0-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;glass=0;fillColor=none;" value="" vertex="1">
           <mxGeometry height="221" width="370" x="1364.75" y="219" as="geometry" />
         </mxCell>
-        <mxCell id="KXTLVslNYSD6iD7wjgX0-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.0.0/16" vertex="1">
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod :&amp;nbsp;10.244.0.0/16" vertex="1">
           <mxGeometry height="30" width="171" x="1364.75" y="219" as="geometry" />
         </mxCell>
         <mxCell id="KXTLVslNYSD6iD7wjgX0-11" edge="1" parent="1" source="KXTLVslNYSD6iD7wjgX0-9" style="edgeStyle=none;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.471;entryY=0.911;entryDx=0;entryDy=0;entryPerimeter=0;fontSize=12;startSize=8;endSize=8;" target="KXTLVslNYSD6iD7wjgX0-2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="KXTLVslNYSD6iD7wjgX0-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod : 192.168.0.0/16" vertex="1">
+        <mxCell id="KXTLVslNYSD6iD7wjgX0-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Réseau Pod :&amp;nbsp;10.244.0.0/16" vertex="1">
           <mxGeometry height="30" width="171" x="967" y="221" as="geometry" />
         </mxCell>
       </root>

@@ -8,15 +8,13 @@
   become: true
 
   vars:
-    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"  # <-- ajuste si besoin
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"
     repo_version: "main"
     repo_dest: "/opt/devops-jfkz"
 
     kubeconfig_path: "/etc/kubernetes/admin.conf"
-
     wikijs_manifest_path: "{{ repo_dest }}/k8s/02-wikijs/wikijs-manifest.yaml"
 
-    # Ingress host + LB IP pour test HTTP
     wikijs_host: "wikijs.lab"
     lb_ip: "192.168.122.200"
 
@@ -60,36 +58,9 @@
       register: wikijs_endpoints
       changed_when: false
 
-    - name: Test HTTP through Ingress (Host header)
+    - name: Test HTTP through Ingress
       shell: |
-        set -e
         curl -sSI -H "Host: {{ wikijs_host }}" http://{{ lb_ip }}/ | head -n 5
       register: wikijs_http
       changed_when: false
-
-    - name: Show status summary
-      debug:
-        msg: |
-      
-          ================================
-          🚀 WikiJS – Deployment Summary
-          ================================
-
-          ▶ Apply
-          {{ wikijs_apply.stdout | default('') }}
-
-          ▶ Rollout
-          {{ wikijs_rollout.stdout | default('') }}
-
-          ▶ Pods
-          {{ wikijs_pods.stdout | default('') }}
-
-          ▶ Service
-          {{ wikijs_svc.stdout | default('') }}
-
-          ▶ Endpoints
-          {{ wikijs_endpoints.stdout | default('') }}
-
-          ▶ HTTP Test (wikijs.lab → 192.168.122.200)
-          {{ wikijs_http.stdout | regex_replace('\r', '') | default('') }}
 

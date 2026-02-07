@@ -55,13 +55,13 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   memory {
-    dedicated = 3000
+    dedicated = 8192
   }
 
   disk {
     datastore_id = "local-lvm"
     interface    = "scsi0"
-    size         = 22
+    size         = 30
   }
 
   network_device {

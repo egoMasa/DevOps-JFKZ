@@ -25,7 +25,7 @@ proxmox_token_id = "terraform@pve!provider"
 # ------------------------------------------------------------
 # Secret du token API
 # ------------------------------------------------------------
-proxmox_token_secret = "9ceb8af8-538e-41a5-b80e-f025e0057ea3"
+proxmox_token_secret = "5b66063c-8db3-43e8-a98a-b99affe29ae9"
 
 # ------------------------------------------------------------
 # Clé SSH injectée dans les VMs via cloud-init
@@ -34,7 +34,7 @@ proxmox_token_secret = "9ceb8af8-538e-41a5-b80e-f025e0057ea3"
 # - accès initial aux VMs
 # - automatisation Ansible
 # ------------------------------------------------------------
-ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMC5gaOBZq5n0LPPd80r5SzpdzZ209Dl2QI3ZuyUsrsx jeremy@omen"
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK8iPlirgXN/0JSS/qVpiO+1coIQp866Akv5Ix8G10XR maison"
 
 # ------------------------------------------------------------
 # Template Proxmox utilisée pour le clonage

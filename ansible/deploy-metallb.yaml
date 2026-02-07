@@ -54,6 +54,16 @@
       register: metallb_label_master
       changed_when: "'not labeled' not in (metallb_label_master.stdout | default(''))"
 
+    - name: Verify metallb kustomize directory exists
+      stat:
+        path: "{{ metallb_kustomize_dir }}/kustomization.yaml"
+      register: kustom_ok
+
+    - name: Fail if kustomization.yaml missing
+      fail:
+        msg: "Missing kustomization.yaml in {{ metallb_kustomize_dir }}"
+      when: not kustom_ok.stat.exists
+
     - name: Deploy MetalLB via Kustomize
       command: kubectl apply -k {{ metallb_kustomize_dir }}
       register: metallb_apply

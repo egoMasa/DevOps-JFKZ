@@ -70,20 +70,26 @@
     - name: Show status summary
       debug:
         msg: |
-          === WikiJS APPLY ===
-          {{ wikijs_apply.stdout }}
+      
+          ================================
+          🚀 WikiJS – Deployment Summary
+          ================================
 
-          === Rollout ===
-          {{ wikijs_rollout.stdout }}
+          ▶ Apply
+          {{ wikijs_apply.stdout | default('') }}
 
-          === Pods ===
-          {{ wikijs_pods.stdout }}
+          ▶ Rollout
+          {{ wikijs_rollout.stdout | default('') }}
 
-          === Service ===
-          {{ wikijs_svc.stdout }}
+          ▶ Pods
+          {{ wikijs_pods.stdout | default('') }}
 
-          === Endpoints ===
-          {{ wikijs_endpoints.stdout }}
+          ▶ Service
+          {{ wikijs_svc.stdout | default('') }}
 
-          === HTTP test (Host={{ wikijs_host }}, IP={{ lb_ip }}) ===
-          {{ wikijs_http.stdout }}
+          ▶ Endpoints
+          {{ wikijs_endpoints.stdout | default('') }}
+
+          ▶ HTTP Test (wikijs.lab → 192.168.122.200)
+          {{ wikijs_http.stdout | regex_replace('\r', '') | default('') }}
+

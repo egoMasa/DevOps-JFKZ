@@ -1,0 +1,103 @@
+# ============================================================
+# Playbook : Deploy MetalLB (Kustomize)
+# Fichier  : deploy-metallb.yaml
+# ============================================================
+
+- name: "K8S ADDON | Deploy MetalLB"
+  hosts: tf-k8s-master
+  become: true
+
+  vars:
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"  # <-- ajuste si besoin
+    repo_version: "main"
+    repo_dest: "/opt/devops-jfkz"
+
+    kubeconfig_path: "/etc/kubernetes/admin.conf"
+
+    metallb_kustomize_dir: "{{ repo_dest }}/k8s/00-metallb"
+
+    # Labels attendus par ton patch nodeSelector speaker
+    metallb_speaker_label_key: "metallb-speaker"
+    metallb_master_label_value: "false"
+    metallb_worker_label_value: "true"
+
+    metallb_workers:
+      - tf-k8s-node-1
+      - tf-k8s-node-2
+    metallb_master_node: "tf-k8s-master"
+
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+  tasks:
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+        update_cache: true
+
+    - name: Clone or update manifests repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        force: true
+
+    - name: Label workers for MetalLB speaker
+      command: kubectl label node {{ item }} {{ metallb_speaker_label_key }}={{ metallb_worker_label_value }} --overwrite
+      loop: "{{ metallb_workers }}"
+      register: metallb_label_workers
+      changed_when: "'not labeled' not in (metallb_label_workers.stdout | default(''))"
+
+    - name: Label master to exclude MetalLB speaker
+      command: kubectl label node {{ metallb_master_node }} {{ metallb_speaker_label_key }}={{ metallb_master_label_value }} --overwrite
+      register: metallb_label_master
+      changed_when: "'not labeled' not in (metallb_label_master.stdout | default(''))"
+
+    - name: Deploy MetalLB via Kustomize
+      command: kubectl apply -k {{ metallb_kustomize_dir }}
+      register: metallb_apply
+
+    - name: Wait MetalLB controller rollout
+      command: kubectl -n metallb-system rollout status deploy/controller --timeout=180s
+      register: metallb_controller_rollout
+
+    - name: Wait MetalLB speaker rollout
+      command: kubectl -n metallb-system rollout status ds/speaker --timeout=180s
+      register: metallb_speaker_rollout
+
+    - name: Get MetalLB pods
+      command: kubectl -n metallb-system get pods -o wide
+      register: metallb_pods
+      changed_when: false
+
+    - name: Get MetalLB IPAddressPools
+      command: kubectl get ipaddresspools.metallb.io -A
+      register: metallb_pools
+      changed_when: false
+
+    - name: Get MetalLB L2Advertisements
+      command: kubectl get l2advertisements.metallb.io -A
+      register: metallb_l2adv
+      changed_when: false
+
+    - name: Show status summary
+      debug:
+        msg: |
+          === MetalLB APPLY ===
+          {{ metallb_apply.stdout }}
+
+          === Rollout controller ===
+          {{ metallb_controller_rollout.stdout }}
+
+          === Rollout speaker ===
+          {{ metallb_speaker_rollout.stdout }}
+
+          === Pods ===
+          {{ metallb_pods.stdout }}
+
+          === IPAddressPools ===
+          {{ metallb_pools.stdout }}
+
+          === L2Advertisements ===
+          {{ metallb_l2adv.stdout }}

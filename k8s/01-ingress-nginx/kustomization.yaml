@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Manifest officiel ingress-nginx (cloud = Service LoadBalancer)
+  - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+  - ingress-nginx-custom.yaml
+
+patchesStrategicMerge:
+  - ingress-nginx-custom.yaml

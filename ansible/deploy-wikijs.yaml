@@ -1,0 +1,89 @@
+# ============================================================
+# Playbook : Deploy WikiJS
+# Fichier  : deploy-wikijs.yaml
+# ============================================================
+
+- name: "APP | Deploy WikiJS"
+  hosts: tf-k8s-master
+  become: true
+
+  vars:
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"  # <-- ajuste si besoin
+    repo_version: "main"
+    repo_dest: "/opt/devops-jfkz"
+
+    kubeconfig_path: "/etc/kubernetes/admin.conf"
+
+    wikijs_manifest_path: "{{ repo_dest }}/k8s/02-wikijs/wikijs-manifest.yaml"
+
+    # Ingress host + LB IP pour test HTTP
+    wikijs_host: "wikijs.lab"
+    lb_ip: "192.168.122.200"
+
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+  tasks:
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+        update_cache: true
+
+    - name: Clone or update manifests repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        force: true
+
+    - name: Apply WikiJS manifest
+      command: kubectl apply -f {{ wikijs_manifest_path }}
+      register: wikijs_apply
+
+    - name: Wait for WikiJS deployment rollout
+      command: kubectl rollout status deploy/wikijs --timeout=300s
+      register: wikijs_rollout
+
+    - name: Get WikiJS pods
+      command: kubectl get pods -l app=wikijs -o wide
+      register: wikijs_pods
+      changed_when: false
+
+    - name: Get WikiJS service
+      command: kubectl get svc wikijs -o wide
+      register: wikijs_svc
+      changed_when: false
+
+    - name: Get WikiJS endpoints
+      command: kubectl get endpoints wikijs
+      register: wikijs_endpoints
+      changed_when: false
+
+    - name: Test HTTP through Ingress (Host header)
+      shell: |
+        set -e
+        curl -sSI -H "Host: {{ wikijs_host }}" http://{{ lb_ip }}/ | head -n 5
+      register: wikijs_http
+      changed_when: false
+
+    - name: Show status summary
+      debug:
+        msg: |
+          === WikiJS APPLY ===
+          {{ wikijs_apply.stdout }}
+
+          === Rollout ===
+          {{ wikijs_rollout.stdout }}
+
+          === Pods ===
+          {{ wikijs_pods.stdout }}
+
+          === Service ===
+          {{ wikijs_svc.stdout }}
+
+          === Endpoints ===
+          {{ wikijs_endpoints.stdout }}
+
+          === HTTP test (Host={{ wikijs_host }}, IP={{ lb_ip }}) ===
+          {{ wikijs_http.stdout }}

@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml
+  - metallb-custom.yaml
+
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: DaemonSet
+      name: speaker
+      namespace: metallb-system
+    patch: |-
+      apiVersion: apps/v1
+      kind: DaemonSet
+      metadata:
+        name: speaker
+        namespace: metallb-system
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              metallb-speaker: "true"

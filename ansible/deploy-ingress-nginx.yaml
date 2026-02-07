@@ -1,0 +1,83 @@
+# ============================================================
+# Playbook : Deploy Ingress-NGINX (Kustomize)
+# Fichier  : deploy-ingress-nginx.yaml
+# ============================================================
+
+- name: "K8S ADDON | Deploy Ingress-NGINX"
+  hosts: tf-k8s-master
+  become: true
+
+  vars:
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"  # <-- ajuste si besoin
+    repo_version: "main"
+    repo_dest: "/opt/devops-jfkz"
+
+    kubeconfig_path: "/etc/kubernetes/admin.conf"
+
+    ingress_kustomize_dir: "{{ repo_dest }}/k8s/01-ingress-nginx"
+
+    # l’IP attendue (doit être dans ton pool MetalLB)
+    expected_lb_ip: "192.168.122.200"
+
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+  tasks:
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+        update_cache: true
+
+    - name: Clone or update manifests repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        force: true
+
+    - name: Deploy Ingress-NGINX via Kustomize
+      command: kubectl apply -k {{ ingress_kustomize_dir }}
+      register: ingress_apply
+
+    - name: Wait controller rollout
+      command: kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=240s
+      register: ingress_rollout
+
+    - name: Get ingress-nginx pods
+      command: kubectl -n ingress-nginx get pods -o wide
+      register: ingress_pods
+      changed_when: false
+
+    - name: Wait for Service to have expected EXTERNAL-IP
+      shell: |
+        set -e
+        kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+      register: ingress_lb_ip
+      retries: 30
+      delay: 4
+      until: ingress_lb_ip.stdout == expected_lb_ip
+      changed_when: false
+
+    - name: Get ingress-nginx service
+      command: kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
+      register: ingress_svc
+      changed_when: false
+
+    - name: Show status summary
+      debug:
+        msg: |
+          === Ingress-NGINX APPLY ===
+          {{ ingress_apply.stdout }}
+
+          === Rollout controller ===
+          {{ ingress_rollout.stdout }}
+
+          === Pods ===
+          {{ ingress_pods.stdout }}
+
+          === Service ===
+          {{ ingress_svc.stdout }}
+
+          === EXTERNAL-IP (expected {{ expected_lb_ip }}) ===
+          {{ ingress_lb_ip.stdout }}

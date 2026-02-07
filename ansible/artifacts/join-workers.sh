@@ -1,2 +1,2 @@
 #!/bin/bash
-kubeadm join 192.168.122.150:6443 --token w4ls0t.fx0qqs5i4xtiztq5 --discovery-token-ca-cert-hash sha256:f08e92cd0c5ac1f9f986d1a71037de3e14ae1aea77e0e098b6e3d697ca5c1f9c 
+kubeadm join 192.168.122.150:6443 --token cgzl22.jwfttn82a92jssgd --discovery-token-ca-cert-hash sha256:9b5dc4f88152fc6f87f3b20915fdfeef77297a69cfc5ff9b22a38e6ee75c074f 

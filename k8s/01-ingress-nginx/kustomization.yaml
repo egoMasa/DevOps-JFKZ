@@ -2,9 +2,37 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # Manifest officiel ingress-nginx (cloud = Service LoadBalancer)
   - https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
-  - ingress-nginx-custom.yaml
 
-patchesStrategicMerge:
-  - ingress-nginx-custom.yaml
+patches:
+  # Patch replicas = 2
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: ingress-nginx-controller
+      namespace: ingress-nginx
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ingress-nginx-controller
+        namespace: ingress-nginx
+      spec:
+        replicas: 2
+
+  # Patch Service: IP MetalLB fixe
+  - target:
+      version: v1
+      kind: Service
+      name: ingress-nginx-controller
+      namespace: ingress-nginx
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: ingress-nginx-controller
+        namespace: ingress-nginx
+      spec:
+        type: LoadBalancer
+        loadBalancerIP: 192.168.122.200

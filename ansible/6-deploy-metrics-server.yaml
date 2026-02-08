@@ -1,0 +1,92 @@
+---
+# Deploy Metrics Server in Kubernetes (required for HPA + kubectl top)
+# - Installs metrics-server (kube-system) if missing
+# - Applies a common lab fix: --kubelet-insecure-tls
+# - Waits for rollout
+# - Verifies metrics API by running `kubectl top nodes`
+
+- name: Deploy metrics-server (cluster-level component)
+  hosts: k8s_master
+  become: true
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: "/home/ansible/.kube/config"
+    metrics_ns: "kube-system"
+    metrics_deploy: "metrics-server"
+    metrics_manifest_url: "https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
+
+    # Lab setting: kubelet often uses self-signed certs; this makes metrics-server work
+    enable_kubelet_insecure_tls: true
+
+  tasks:
+    - name: Check if metrics APIService exists (metrics.k8s.io)
+      ansible.builtin.command: "kubectl get apiservice v1beta1.metrics.k8s.io"
+      register: apiservice_check
+      failed_when: false
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Install metrics-server manifest (only if missing)
+      ansible.builtin.command: "kubectl apply -f {{ metrics_manifest_url }}"
+      when: apiservice_check.rc != 0
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # Wait a bit for deployment to appear (first install)
+    - name: Wait for metrics-server deployment to exist
+      ansible.builtin.command: "kubectl -n {{ metrics_ns }} get deploy {{ metrics_deploy }}"
+      register: deploy_exists
+      retries: 15
+      delay: 2
+      until: deploy_exists.rc == 0
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Add --kubelet-insecure-tls arg (lab fix)
+      when: enable_kubelet_insecure_tls
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        # If the arg already exists, do nothing (idempotent)
+        if kubectl -n {{ metrics_ns }} get deploy {{ metrics_deploy }} -o json \
+          | grep -q -- '--kubelet-insecure-tls'; then
+          echo "metrics-server already has --kubelet-insecure-tls"
+          exit 0
+        fi
+
+        kubectl -n {{ metrics_ns }} patch deployment {{ metrics_deploy }} \
+          --type='json' \
+          -p='[
+            {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}
+          ]'
+      args:
+        executable: /bin/bash
+      changed_when: true
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for metrics-server rollout
+      ansible.builtin.command: "kubectl -n {{ metrics_ns }} rollout status deploy/{{ metrics_deploy }} --timeout=240s"
+      register: rollout
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Verify metrics API (kubectl top nodes)
+      ansible.builtin.command: "kubectl top nodes"
+      register: top_nodes
+      retries: 20
+      delay: 3
+      until: top_nodes.rc == 0
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg:
+          - "metrics-server rollout: {{ rollout.stdout }}"
+          - "kubectl top nodes:\n{{ top_nodes.stdout }}"

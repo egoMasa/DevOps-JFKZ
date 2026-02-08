@@ -1,0 +1,147 @@
+# Default values for wiki.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+revisionHistoryLimit: 10
+
+image:
+  repository: requarks/wiki
+  imagePullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+
+startupProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 60
+  httpGet:
+    path: /healthz
+    port: http
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  # Annotations applied for services such as externalDNS or
+  # service type LoadBalancer
+  # type: LoadBalancer
+  # httpsPort: 443
+  # annotations: {}
+  # loadBalancerIP: 172.16.0.1
+
+ingress:
+  enabled: true
+  # ✅ Recommandé (au lieu de kubernetes.io/ingress.class)
+  className: "nginx"
+  annotations: {}
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: wikijs.lab
+      paths:
+        - path: "/"
+          pathType: Prefix
+
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+volumeMounts: []
+
+volumes: []
+
+# This will allow us to install locales even without internet access using a initContainer & Wiki.js "sideloading"
+sideload:
+  enabled: false
+  # Git-Repo containing all locales.json-files you need:
+  repoURL: https://github.com/Requarks/wiki-localization
+
+  ## This can be helpfull if you have internet access over a http proxy:
+  env: []
+  #  - name: HTTPS_PROXY
+  #    value: http://my.proxy.com:3128
+
+  securityContext: {}
+  resources: {}
+
+## Append extra trusted certificates for node process from extra volume via NODE_EXTRA_CA_CERTS variable
+# nodeExtraCaCerts: "/path/to/certs.pem"
+
+## Additional environment variables to set
+extraEnvVars: []
+# extraEnvVars:
+#   - name: CUSTOM_VAR
+#     value: "custom_value"
+
+# ✅ Connexion DB externe (simple / robuste pour un lab)
+externalPostgresql:
+  # note: ?sslmode=require => ?ssl=true
+  databaseURL: "postgresql://postgres:postgres@192.168.122.153:5432/wiki"
+  # Si tu utilises un CA self-signed ou que tu veux ignorer TLS côté Node :
+  # NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+## Configuration values for the postgresql dependency.
+## Set to false if bringing your own PostgreSQL, and set externalPostgresql.databaseURL
+postgresql:
+  enabled: false
+
+  # (Le reste de cette section est ignoré si enabled=false, laissé ici pour "complet")
+  fullnameOverride: ""
+  postgresqlUser: postgres
+  postgresqlDatabase: wiki
+  replication:
+    enabled: false
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 8Gi

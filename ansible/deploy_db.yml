@@ -26,9 +26,9 @@
 
     # --- Wiki.js DB settings (à réutiliser dans les manifests Wiki.js) ---
     db_type: "postgres"
-    db_name: "wikijs"
-    db_user: "wikijs"
-    db_pass: "wikijs_password"
+    db_name: "wiki"
+    db_user: "postgres"
+    db_pass: "postgres"
     listen_port: "5432"
 
     # --- Persistent storage (rootless-friendly) ---

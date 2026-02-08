@@ -1,0 +1,203 @@
+---
+# Playbook: Deploy Wiki.js (Final/Scale phase)
+# Goal: Put the cluster in "final state" AFTER the initial Wiki.js setup wizard is completed.
+#
+# What it does:
+# - Clones/updates your repo (for consistency)
+# - Ensures Helm repo is present and up-to-date
+# - Upgrades the Wiki.js release with a target replicaCount
+# - (Optional) Applies an HPA (min/max pods) based on CPU utilization
+# - (Optional) Applies resource requests/limits (recommended when using HPA)
+#
+# Assumptions:
+# - Wiki.js is already installed in namespace "wikijs" with release name "wikijs"
+# - Setup wizard has been completed (admin created, site URL set)
+# - Ingress + MetalLB already in place
+#
+# Notes:
+# - If you enable HPA, make sure metrics-server is installed in your cluster.
+# - This playbook is safe to re-run (idempotent).
+
+- name: Scale Wiki.js (Final state) using Helm + optional HPA
+  hosts: k8s_master
+  become: true
+  gather_facts: true
+
+  vars:
+    # --- Git repo (values file path is inside this repo) ---
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"
+    repo_version: "main"
+    repo_dest: "/opt/devops-jfkz"
+
+    # Existing values file in the repo
+    wikijs_values_file: "{{ repo_dest }}/k8s/02-wikijs/values-wikijs.yaml"
+
+    # Release settings
+    wikijs_namespace: "wikijs"
+    wikijs_release: "wikijs"
+    wikijs_chart: "requarks/wiki"
+
+    # Binaries / kubeconfig
+    helm_bin: "/usr/local/bin/helm"
+    kubeconfig_path: "/home/ansible/.kube/config"
+
+    # -------------------------
+    # FINAL STATE PARAMETERS
+    # -------------------------
+    # Static scaling target (used when HPA is disabled OR as the "base" replicas before HPA kicks in)
+    wikijs_replica_count: 2
+
+    # Enable Horizontal Pod Autoscaler (HPA)
+    wikijs_hpa_enabled: true
+    wikijs_hpa_min_replicas: 2
+    wikijs_hpa_max_replicas: 5
+    wikijs_hpa_cpu_utilization: 70  # target average CPU utilization percentage
+
+    # Optional: set resources (recommended if HPA enabled)
+    # Keep them modest for your lab. Adjust based on node capacity.
+    wikijs_set_resources: true
+    wikijs_requests_cpu: "200m"
+    wikijs_requests_memory: "256Mi"
+    wikijs_limits_cpu: "500m"
+    wikijs_limits_memory: "768Mi"
+
+  tasks:
+    # ------------------------------------------------------------------------
+    # 0) Ensure repo present (so we use the same tracked values-wikijs.yaml)
+    # ------------------------------------------------------------------------
+    - name: Install required packages (git)
+      ansible.builtin.apt:
+        name:
+          - git
+        state: present
+        update_cache: true
+
+    - name: Clone/update project repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        update: true
+
+    - name: Ensure values file exists
+      ansible.builtin.stat:
+        path: "{{ wikijs_values_file }}"
+      register: values_stat
+
+    - name: Fail if values file is missing
+      ansible.builtin.fail:
+        msg: "Missing values file: {{ wikijs_values_file }} (expected: k8s/02-wikijs/values-wikijs.yaml in the repo)"
+      when: not values_stat.stat.exists
+
+    # ------------------------------------------------------------------------
+    # 1) Helm repo update (best effort)
+    # ------------------------------------------------------------------------
+    - name: Add requarks Helm repo (idempotent)
+      ansible.builtin.command: "{{ helm_bin }} repo add requarks https://charts.js.wiki"
+      register: helm_repo_add
+      changed_when: "'has been added' in helm_repo_add.stdout"
+      failed_when: false
+
+    - name: Helm repo update
+      ansible.builtin.command: "{{ helm_bin }} repo update"
+      changed_when: false
+
+    # ------------------------------------------------------------------------
+    # 2) Helm upgrade: scale + optional resources
+    #    We keep using your repo values file and only override what we need.
+    # ------------------------------------------------------------------------
+    - name: Upgrade Wiki.js with target replicaCount (+ optional resources)
+      ansible.builtin.command: >
+        {{ helm_bin }} upgrade {{ wikijs_release }} {{ wikijs_chart }}
+        -n {{ wikijs_namespace }}
+        -f {{ wikijs_values_file }}
+        --set replicaCount={{ wikijs_replica_count }}
+        {% if wikijs_set_resources %}
+        --set resources.requests.cpu={{ wikijs_requests_cpu }}
+        --set resources.requests.memory={{ wikijs_requests_memory }}
+        --set resources.limits.cpu={{ wikijs_limits_cpu }}
+        --set resources.limits.memory={{ wikijs_limits_memory }}
+        {% endif %}
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Wait for deployment rollout
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} rollout status deploy/{{ wikijs_release }} --timeout=240s"
+      register: rollout
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # ------------------------------------------------------------------------
+    # 3) Optional HPA
+    #    Requires metrics-server in the cluster.
+    # ------------------------------------------------------------------------
+    - name: Apply HPA for Wiki.js (autoscaling)
+      when: wikijs_hpa_enabled
+      ansible.builtin.shell: |
+        set -euo pipefail
+        cat <<'EOF' | kubectl apply -f -
+        apiVersion: autoscaling/v2
+        kind: HorizontalPodAutoscaler
+        metadata:
+          name: {{ wikijs_release }}
+          namespace: {{ wikijs_namespace }}
+        spec:
+          scaleTargetRef:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: {{ wikijs_release }}
+          minReplicas: {{ wikijs_hpa_min_replicas }}
+          maxReplicas: {{ wikijs_hpa_max_replicas }}
+          metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                target:
+                  type: Utilization
+                  averageUtilization: {{ wikijs_hpa_cpu_utilization }}
+        EOF
+      args:
+        executable: /bin/bash
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Remove HPA if disabled
+      when: not wikijs_hpa_enabled
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} delete hpa {{ wikijs_release }} --ignore-not-found"
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # ------------------------------------------------------------------------
+    # 4) Show final state
+    # ------------------------------------------------------------------------
+    - name: Show deployment
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} get deploy {{ wikijs_release }} -o wide"
+      register: deploy_out
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show pods
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} get pods -o wide"
+      register: pods_out
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show HPA (if any)
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} get hpa {{ wikijs_release }} -o wide"
+      register: hpa_out
+      changed_when: false
+      failed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Print summary
+      ansible.builtin.debug:
+        msg:
+          - "Rollout: {{ rollout.stdout }}"
+          - "Deployment:\n{{ deploy_out.stdout }}"
+          - "Pods:\n{{ pods_out.stdout }}"
+          - "HPA:\n{{ hpa_out.stdout | default('No HPA / metrics-server not available') }}"
+          - "Final state applied. If HPA is enabled and you see <unknown> targets, install metrics-server."

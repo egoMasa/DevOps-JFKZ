@@ -1,0 +1,199 @@
+---
+# Playbook: Deploy Wiki.js (Init phase) using Helm + existing values file from your Git repo
+# Goal: Deploy Wiki.js up to the point where the web UI is reachable for the initial setup wizard.
+#       (We STOP here. Scaling/HPA will be handled in a separate "final state" playbook.)
+#
+# Key points:
+# - We clone your repo to /opt/devops-jfkz
+# - We DO NOT generate values-wikijs.yaml (it already exists in your repo)
+# - We install Helm 3 if missing
+# - We add/update the Wiki.js chart repo
+# - We deploy/upgrade the release "wikijs" in namespace "wikijs" using the repo values file
+# - We ensure kubectl/helm use the correct kubeconfig (root would otherwise default to localhost:8080)
+
+- name: Deploy Wiki.js (Init phase) using repo values file
+  hosts: k8s_master
+  become: true
+  gather_facts: true
+
+  vars:
+    # --- Git repo containing your Kubernetes manifests / values ---
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"
+    repo_version: "main"
+    repo_dest: "/opt/devops-jfkz"
+
+    # --- Existing values file path INSIDE the repo ---
+    # Matches your structure: k8s/02-wikijs/values-wikijs.yaml
+    wikijs_values_file: "{{ repo_dest }}/k8s/02-wikijs/values-wikijs.yaml"
+
+    # --- Wiki.js release settings ---
+    wikijs_namespace: "wikijs"
+    wikijs_release: "wikijs"
+    wikijs_chart: "requarks/wiki"
+
+    # --- Binaries ---
+    helm_bin: "/usr/local/bin/helm"
+
+    # --- IMPORTANT: kubeconfig used by kubectl/helm when running with become:true (root) ---
+    # Your cluster admin config is typically under the 'ansible' user home on the master.
+    kubeconfig_path: "/home/ansible/.kube/config"
+
+  tasks:
+    # ------------------------------------------------------------------------
+    # 0) System prerequisites for git clone + curl-based helm install script
+    # ------------------------------------------------------------------------
+    - name: Install required packages (git, curl)
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+        state: present
+        update_cache: true
+
+    # ------------------------------------------------------------------------
+    # 1) Clone / update your repository on the master
+    # ------------------------------------------------------------------------
+    - name: Clone project repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        update: true
+
+    # Sanity check: confirm the values file exists where expected.
+    - name: Ensure values file exists in repo
+      ansible.builtin.stat:
+        path: "{{ wikijs_values_file }}"
+      register: values_stat
+
+    - name: Fail if values file is missing
+      ansible.builtin.fail:
+        msg: "Missing values file: {{ wikijs_values_file }} (expected: k8s/02-wikijs/values-wikijs.yaml in the repo)"
+      when: not values_stat.stat.exists
+
+    # ------------------------------------------------------------------------
+    # 2) Install Helm 3 if missing
+    # ------------------------------------------------------------------------
+    - name: Install Helm 3 (only if not already installed)
+      ansible.builtin.shell: |
+        set -euo pipefail
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        executable: /bin/bash
+        creates: "{{ helm_bin }}"
+
+    - name: Show Helm version
+      ansible.builtin.command: "{{ helm_bin }} version"
+      register: helm_version
+      changed_when: false
+
+    # ------------------------------------------------------------------------
+    # 3) Helm repo configuration for Wiki.js chart
+    # ------------------------------------------------------------------------
+    - name: Add requarks Helm repo (idempotent)
+      ansible.builtin.command: "{{ helm_bin }} repo add requarks https://charts.js.wiki"
+      register: helm_repo_add
+      # helm may print "has been added" when new, or error when already exists. We'll accept both.
+      changed_when: "'has been added' in helm_repo_add.stdout"
+      failed_when: false
+
+    - name: Helm repo update
+      ansible.builtin.command: "{{ helm_bin }} repo update"
+      changed_when: false
+
+    # ------------------------------------------------------------------------
+    # 4) Kubernetes: ensure namespace exists
+    # IMPORTANT: kubectl must use correct kubeconfig, otherwise it defaults to localhost:8080
+    # ------------------------------------------------------------------------
+    - name: Ensure namespace exists
+      ansible.builtin.command: "kubectl get ns {{ wikijs_namespace }}"
+      register: ns_check
+      failed_when: false
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Create namespace if missing
+      ansible.builtin.command: "kubectl create namespace {{ wikijs_namespace }}"
+      when: ns_check.rc != 0
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # ------------------------------------------------------------------------
+    # 5) Deploy via Helm (install or upgrade)
+    # IMPORTANT: helm uses the cluster too, so we pass KUBECONFIG.
+    # ------------------------------------------------------------------------
+    - name: Check if Wiki.js release already exists
+      ansible.builtin.command: "{{ helm_bin }} -n {{ wikijs_namespace }} list -q"
+      register: helm_list
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Install Wiki.js (INIT phase, expects replicaCount=1 in values)
+      ansible.builtin.command: >
+        {{ helm_bin }} install {{ wikijs_release }} {{ wikijs_chart }}
+        -n {{ wikijs_namespace }}
+        -f {{ wikijs_values_file }}
+      when: wikijs_release not in helm_list.stdout_lines
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Upgrade Wiki.js if release already exists (ensure values applied)
+      ansible.builtin.command: >
+        {{ helm_bin }} upgrade {{ wikijs_release }} {{ wikijs_chart }}
+        -n {{ wikijs_namespace }}
+        -f {{ wikijs_values_file }}
+      when: wikijs_release in helm_list.stdout_lines
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # ------------------------------------------------------------------------
+    # 6) Basic rollout + visibility checks (we stop after confirming access path)
+    # ------------------------------------------------------------------------
+    - name: Wait for deployment rollout (best-effort)
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} rollout status deploy/{{ wikijs_release }} --timeout=180s"
+      register: rollout
+      changed_when: false
+      failed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show pods
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} get pods -o wide"
+      register: pods_out
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show ingress
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} get ingress -o wide"
+      register: ingress_out
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show last logs (tail) - best effort
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} logs deploy/{{ wikijs_release }} --tail=120"
+      register: logs_out
+      failed_when: false
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # ------------------------------------------------------------------------
+    # 7) Print summary + next manual step (setup wizard)
+    # ------------------------------------------------------------------------
+    - name: Print summary / next manual step (setup in browser)
+      ansible.builtin.debug:
+        msg:
+          - "Helm: {{ helm_version.stdout }}"
+          - "Repo cloned to: {{ repo_dest }}"
+          - "Values file used: {{ wikijs_values_file }}"
+          - "Rollout status (best effort): {{ rollout.stdout | default('n/a') }}"
+          - "Pods:\n{{ pods_out.stdout }}"
+          - "Ingress:\n{{ ingress_out.stdout }}"
+          - "Logs (tail):\n{{ logs_out.stdout | default('no logs yet') }}"
+          - "NEXT: Point wikijs.lab to the ingress EXTERNAL-IP (MetalLB) from ingress-nginx-controller service."
+          - "Then open: http://wikijs.lab/ and complete the setup wizard (admin + Site URL)."
+          - "STOP HERE: scaling/HPA will be handled by a separate playbook (final cluster state)."

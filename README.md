@@ -1,5 +1,5 @@
 # DevOps---JFKZ
-
+![Maquette](https://github.com/egoMasa/DevOps-JFKZ/blob/main/images/Maquette.png)
 ```
 cd /devops/terraform/
 rm -rf .terraform

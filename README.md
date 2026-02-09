@@ -1,7 +1,11 @@
 # DevOps---JFKZ
 
 ```
-cd ~/devops/terraform/
+cd /devops/terraform/
+rm -rf .terraform
+rm -f .terraform.lock.hcl
+rm -f terraform.tfstate terraform.tfstate.backup
+rm -rf .terraform .terraform.lock.hcl
 terraform init
 terraform plan
 terraform apply
@@ -15,45 +19,22 @@ ssh-keygen -f '/home/jeremy/.ssh/known_hosts' -R '192.168.122.153'
 
 ---
 
-cd ~/devops/ansible/
-ansible-playbook -i inventory.ini deploy_k8s_master.yml
-ansible-playbook -i inventory.ini deploy_k8s_workers.yml
-ansible-playbook -i inventory.ini deploy_db.yml
+cd /devops/ansible/
+ansible-playbook -i inventory.ini 1-deploy-k8s-master.yaml
+ansible-playbook -i inventory.ini 2-deploy-k8s-workers.yaml
+ansible-playbook -i inventory.ini 3-deploy-db-postgres.yaml
+ansible-playbook -i inventory.ini 4-deploy-metallb.yaml
+ansible-playbook -i inventory.ini 5-deploy-ingress-nginx.yaml
+ansible-playbook -i inventory.ini 6-deploy-metrics-server.yaml
+ansible-playbook -i inventory.ini 7-deploy-wikijs-init.yaml
 
----
+- EMAIL : test@gmail.com
+- Password : azerty123
+- URL : http://wikijs.lab
+  
+ansible-playbook -i inventory.ini 8-deploy-wikijs-scale.yaml
 
-cd ~/devops/k8s/
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml
-kubectl -n metallb-system rollout status deploy/controller
-kubectl -n metallb-system rollout status ds/speaker
-kubectl label node tf-k8s-node-1 metallb-speaker=true --overwrite
-kubectl label node tf-k8s-node-2 metallb-speaker=true --overwrite
-kubectl label node tf-k8s-master metallb-speaker=false --overwrite
-kubectl -n metallb-system patch ds speaker --type='merge' -p '{
-  "spec": {
-    "template": {
-      "spec": {
-        "nodeSelector": {
-          "metallb-speaker": "true"
-        }
-      }
-    }
-  }
-}'
-kubectl -n metallb-system rollout restart ds/speaker
-kubectl apply -f metallb-manifest.yaml
-
----
-
-cd ~/devops/k8s/
-kubectl apply -f nginx-manifest.yaml
-
----
-
-cd ~/devops/k8s/
-kubectl apply -f wikijs-manifest.yaml
-
----
-
-URL : http://wikijs.lab:80
+--- Vérifications 
+ssh ansible@192.168.122.150
+kubectl get nodes,pods,svc,ingress,ep,pvc,hpa -A
 ```

@@ -768,37 +768,246 @@ reports/
 | Skipped | 50              | 17              |
 | Total   | 756             | 756             |
 | **%**   | **48,7 %**      | **88,0 %**      |
-# Partie 4 : Solution de conteneurisation (Podman)  
+
+
+# Partie 4 : Conteneurisation — Concepts, Outils et Choix Techniques
+
 ## 4.1) Notion de conteneurisation
-La conteneurisation représente une évolution majeure de la virtualisation, se distinguant de la virtualisation matérielle classique (Hyperviseurs de Type 1 ou 2) par son niveau d'abstraction. Tandis qu'une machine virtuelle émule un matériel complet, incluant un BIOS/UEFI et un système d'exploitation invité intégral avec son propre noyau, le conteneur opère une **virtualisation au niveau du système d'exploitation**.
 
-Cette technologie repose sur une exploitation fine des primitives du noyau Linux (Kernel), permettant d'isoler des processus tout en partageant les ressources de la machine hôte. Cette isolation est rendue possible par la synergie de trois piliers techniques fondamentaux :
-- **Les Namespaces (Espaces de nommage) :** Ils constituent la barrière d'isolation principale en cloisonnant les ressources système par processus. Le noyau alloue à chaque conteneur ses propres instances de structures de données (PID pour les processus, NET pour la pile réseau, MNT pour les points de montage, UTS pour le nom d'hôte et IPC pour les communications inter-processus). De fait, un processus à l'intérieur d'un conteneur "croit" être seul sur le système, sans visibilité sur l'hôte ou les autres conteneurs.
-- **Les Control Groups (cgroups) :** Si les namespaces isolent ce que le conteneur peut "voir", les cgroups limitent ce qu'il peut "consommer". Ils permettent une gestion granulaire des ressources (CPU, RAM, I/O disque, bande passante réseau), garantissant qu'un conteneur ne puisse pas saturer l'hôte et provoquer un déni de service pour les autres applications (phénomène du "noisy neighbor").
-- **Le Système de Fichiers en Couches (UnionFS / Overlay2) :** Contrairement aux images de VM lourdes et monolithiques, les conteneurs utilisent des systèmes de fichiers d'union. Chaque modification est une couche supplémentaire (layer) empilée sur une image de base immuable. Cette architecture permet une optimisation massive du stockage par déduplication et accélère drastiquement le déploiement via le mécanisme de "Copy-on-Write" (CoW).
+La conteneurisation représente une évolution majeure par rapport à la virtualisation matérielle classique. Là où une machine virtuelle émule un matériel complet avec son propre noyau, un conteneur opère une **virtualisation au niveau du système d'exploitation** : il isole des processus en partageant le noyau de la machine hôte.
 
-En somme, le conteneur devient une unité de distribution logicielle universelle. En encapsulant l'application avec l'intégralité de ses dépendances (librairies, binaires, fichiers de configuration), nous éliminons l'adage "ça marche sur ma machine" pour garantir une stricte parité entre les environnements de développement, de qualification et de production.
+Cette isolation repose sur trois primitives fondamentales du noyau Linux.
 
-## 4.2) Etudes des solutions de conteneurisation (docker vs podman)
-Le choix du moteur d'exécution (runtime) est une décision architecturale critique qui conditionne la sécurité, la résilience et l'opérabilité de notre infrastructure. Historiquement, **Docker** a démocratisé l'usage des conteneurs en proposant une interface simplifiée. Toutefois, l'évolution des exigences de sécurité et l'émergence des standards de l'OCI (Open Container Initiative) ont mis en lumière des limites structurelles que **Podman** (Pod Manager) vient corriger.
+**Les Namespaces** constituent la barrière d'isolation principale. Le noyau alloue à chaque conteneur ses propres instances de structures de données système : `PID` pour les processus, `NET` pour la pile réseau, `MNT` pour les points de montage, `UTS` pour le nom d'hôte, `IPC` pour les communications inter-processus, et `USER` pour l'isolation des identifiants utilisateurs. Un processus à l'intérieur d'un conteneur se croit seul sur le système, sans visibilité sur l'hôte ni sur les autres conteneurs.
 
-### 4.2.1) L'architecture monolithique de Docker et ses vecteurs de risques
-L'architecture de Docker repose sur un modèle client-serveur centralisé autour du démon `dockerd`. Lorsqu'un utilisateur invoque la commande `docker run`, le client CLI communique via une socket locale (ou réseau) avec ce démon qui possède les privilèges `root`. Cette conception présente trois vulnérabilités majeures :
+**Les Control Groups (cgroups)** complètent l'isolation en limitant ce que le conteneur peut *consommer*. Ils permettent une gestion granulaire des ressources (CPU, RAM, I/O disque, bande passante réseau), garantissant qu'un conteneur ne puisse pas saturer l'hôte — phénomène dit du *noisy neighbor*. La version 2 des cgroups (`cgroups v2`), désormais standard sur Ubuntu 22.04+, unifie la hiérarchie et améliore significativement la gestion des ressources en mode rootless.
 
-1. **Le Point de Défaillance Unique (SPOF) :** En tant que processus monolithique, le démon Docker gère tout : l'état des conteneurs, les images, les volumes et le réseau. Si le processus `dockerd` s'interrompt, l'intégralité de la flotte de conteneurs devient orpheline ou s'arrête, ce qui est incompatible avec une haute disponibilité rigoureuse.
-2. **L'exposition de la surface d'attaque (Root-Dæmon) :** Le fait que le moteur de conteneurisation s'exécute en permanence avec des privilèges élevés crée une faille de sécurité critique. Si un attaquant parvient à compromettre le démon ou à s'en échapper via une vulnérabilité de type "container escape", il obtient immédiatement un accès privilégié total sur l'hôte physique ou virtuel.
-3. **L'obsolescence face à l'écosystème Kubernetes :** Initialement, Kubernetes utilisait Docker comme runtime par défaut. Cependant, Docker n'étant pas nativement conforme à l'interface CRI (Container Runtime Interface), une couche de traduction nommée `dockershim` était nécessaire. Depuis Kubernetes 1.24, ce support a été supprimé au profit de runtimes plus légers et spécialisés (CRI-O, containerd), rendant Docker moins pertinent dans une stack orchestrée moderne.
+**Le système de fichiers en couches (UnionFS / OverlayFS)** permet aux conteneurs de partager une image de base immuable tout en y superposant des couches de modifications propres à chaque instance. Le mécanisme *Copy-on-Write* (CoW) garantit qu'une couche de base n'est stockée qu'une seule fois sur l'hôte, même si cent conteneurs s'en servent simultanément.
 
-### 4.2.2) Podman : L'approche "Daemonless" et la sécurité par le "Rootless"
-Podman, développé par Red Hat, propose une rupture technologique en adoptant une architecture décentralisée. Au lieu d'un démon central, Podman utilise un modèle de processus standard (fork/exec). Chaque conteneur est un processus enfant direct de l'outil de gestion, géré de manière autonome.
+Le conteneur devient ainsi une unité de distribution logicielle universelle : il embarque l'application avec l'intégralité de ses dépendances, éliminant la dérive entre environnements de développement, de qualification et de production.
 
-Cette mutation architecturale apporte des bénéfices décisifs pour notre projet :
-- **Mode Rootless natif :** C'est l'atout majeur de Podman. Il permet à un utilisateur sans privilèges de créer, lancer et gérer des conteneurs. Grâce à l'utilisation des `User Namespaces` du noyau Linux, Podman effectue un mappage d'UID/GID (via `/etc/subuid` et `/etc/subgid`). Ainsi, un utilisateur `root` à l'intérieur d'un conteneur Podman correspond en réalité à un utilisateur standard sans droits sur l'hôte. En cas de compromission du conteneur, l'attaquant reste confiné dans un environnement aux privilèges extrêmement restreints.
-- **Intégration systémique avec Systemd :** Contrairement à Docker qui tente de réinventer la gestion de services, Podman délègue cette responsabilité à **Systemd**, le standard de l'industrie Linux. Nous pouvons générer des "Unit Files" systemd pour chaque conteneur, permettant de gérer leur cycle de vie (auto-restart, gestion des dépendances, journalisation via journald) avec la même rigueur que les services natifs de l'OS. Cela assure une persistance robuste après redémarrage sans dépendre d'un service tiers.
-- **Convergence native avec Kubernetes :** Podman a été conçu avec Kubernetes comme horizon. Il introduit nativement le concept de **Pod** (groupe de conteneurs partageant un espace réseau et des volumes), permettant de tester localement des topologies complexes identiques à celles du cluster cible. De plus, Podman peut générer ou lire des manifestes YAML Kubernetes. Cette capacité permet de "shifter" la complexité de l'orchestration au plus tôt dans le cycle de développement : un développeur conçoit son service avec Podman et produit directement le fichier de déploiement qui sera consommé par nos pipelines CI/CD Kubernetes.
-- **Souveraineté et conformité OCI :** Podman respecte strictement les standards de l'Open Container Initiative (OCI) pour le runtime (`runc` ou `crun`) et le format des images. Cette conformité garantit une interopérabilité totale : toutes les images construites avec Docker sont utilisables avec Podman, et vice versa, tout en nous affranchissant des changements de licence commerciale (comme Docker Desktop) et en assurant la pérennité de notre stack Open Source.
+---
 
-En conclusion, l'adoption de Podman pour notre infrastructure post-hardening Ansible s'inscrit dans une démarche de **"Security by Design"**. Elle nous permet de concilier la flexibilité des conteneurs avec une isolation stricte, une gestion de services unifiée et une trajectoire de déploiement fluide vers notre futur cluster Kubernetes.
+## 4.2) La pile de conteneurisation — architecture en couches
+
+Avant de comparer les outils, il est essentiel de comprendre que la "conteneurisation" n'est pas un outil unique mais une **pile de composants distincts**, chacun ayant un rôle précis et des interfaces standardisées.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│            Container Engine (usage humain)              │
+│         Docker CLI  /  Podman CLI  /  nerdctl           │
+├─────────────────────────────────────────────────────────┤
+│         Container Runtime CRI (usage orchestrateur)     │
+│              containerd  /  CRI-O                       │
+├─────────────────────────────────────────────────────────┤
+│         OCI Runtime (interaction noyau)                 │
+│                  runc  /  crun                          │
+├─────────────────────────────────────────────────────────┤
+│                   Noyau Linux                           │
+│         Namespaces · cgroups · OverlayFS                │
+└─────────────────────────────────────────────────────────┘
+```
+
+Chaque couche communique avec la suivante via un **contrat standardisé** :
+
+- Le Container Engine parle à son runtime CRI via une socket Unix propriétaire (Docker) ou en appel direct (Podman).
+- Le kubelet de Kubernetes parle au runtime CRI via l'**interface CRI**, spécification gRPC définie par le projet Kubernetes.
+- Le runtime CRI parle à l'OCI Runtime via la **spécification OCI**, un fichier `config.json` décrivant le conteneur à créer.
+- L'OCI Runtime appelle directement le noyau Linux via des syscalls (`clone()`, `setrlimit()`, `pivot_root()`).
+
+Cette séparation en couches interchangeables est la clé de compréhension de tout l'écosystème.
+
+---
+
+## 4.3) Les Container Engines — outils orientés utilisateur
+
+Un **Container Engine** est une suite logicielle complète conçue pour qu'un humain (développeur, administrateur, script CI) puisse interagir avec des conteneurs sans se préoccuper des mécanismes bas niveau. Il fournit : une CLI, la gestion des images (pull, build, push), la gestion des volumes et du réseau, et l'orchestration locale de conteneurs.
+
+Docker et Podman sont les deux Container Engines dominants. Ils ciblent le **même usage** — manipulation de conteneurs en local — mais avec des architectures fondamentalement différentes.
+
+### 4.3.1) Docker — le pionnier et ses limites structurelles
+
+Docker a démocratisé les conteneurs à partir de 2013 en proposant une interface unifiée et simple. Son architecture repose sur un **modèle client-serveur** centralisé autour du daemon `dockerd`.
+
+```
+docker CLI  ──socket──►  dockerd (root)  ──►  containerd  ──►  runc  ──►  noyau
+```
+
+Ce modèle présente trois limites structurelles identifiées.
+
+**Point de défaillance unique (SPOF).** Le daemon dockerd gère en permanence l'état global de tous les conteneurs, images, volumes et réseaux. Si ce processus s'interrompt — crash, mise à jour, OOM killer — l'intégralité de la flotte de conteneurs devient orpheline ou s'arrête. Ce comportement est incompatible avec une infrastructure à haute disponibilité.
+
+**Surface d'attaque par le daemon root.** Le daemon tourne en permanence avec les privilèges `root`. Une vulnérabilité de type *container escape* — dont plusieurs ont été documentées dans les CVE de l'OCI — donne à un attaquant un accès root immédiat sur l'hôte physique. Ce modèle viole le principe de moindre privilège.
+
+**Exclusion de l'écosystème Kubernetes.** Docker ne parlait pas nativement l'interface CRI. Kubernetes maintenait une couche de traduction ad hoc appelée `dockershim` uniquement pour Docker, représentant une dette technique considérable. Cette couche a été définitivement supprimée en **Kubernetes 1.24 (mai 2022)**. Docker comme runtime Kubernetes n'est plus possible sans adaptateur tiers.
+
+### 4.3.2) Podman — rupture architecturale et sécurité par conception
+
+Podman (Pod Manager), développé par Red Hat, adopte une architecture radicalement différente : **daemonless et rootless par défaut**.
+
+```
+podman CLI  ──fork/exec──►  crun  ──►  noyau
+                (pas de daemon intermédiaire)
+```
+
+Chaque conteneur Podman est un processus enfant direct de l'outil, géré de manière autonome par le noyau. Il n'existe aucun processus central intermédiaire.
+
+**Mode Rootless natif.** Podman exploite les `User Namespaces` du noyau pour mapper les UID/GID via `/etc/subuid` et `/etc/subgid`. Un utilisateur `root` à l'intérieur du conteneur correspond à un utilisateur standard sans droits sur l'hôte. En cas de compromission, l'attaquant reste confiné dans l'espace de noms utilisateur sans capacité d'escalade de privilèges.
+
+**Intégration Systemd native.** Podman délègue la gestion du cycle de vie des conteneurs à Systemd via des unit files générés automatiquement (`podman generate systemd`). Le redémarrage automatique, la gestion des dépendances entre services et la journalisation centralisée via `journald` sont ainsi gérés par le superviseur standard de l'OS, sans couche applicative supplémentaire.
+
+**Convergence native avec Kubernetes.** Podman implémente nativement le concept de Pod et peut générer des manifestes YAML Kubernetes directement depuis un pod en cours d'exécution (`podman generate kube`). Cette capacité permet de tester localement des topologies identiques à celles du cluster cible et de produire les fichiers de déploiement utilisés ensuite par Helm ou kubectl.
+
+**Conformité OCI totale.** Toutes les images construites avec Docker sont compatibles avec Podman et inversement — le format d'image OCI est un standard commun. Podman s'affranchit de la licence commerciale de Docker Desktop, qui a évolué vers un modèle payant pour les entreprises de plus de 250 employés depuis 2022.
+
+### 4.3.3) Tableau comparatif Docker vs Podman
+
+| Critère | Docker | Podman |
+|---|---|---|
+| Architecture | Client-serveur (daemon central) | Daemonless (fork/exec) |
+| Privilèges par défaut | Daemon root permanent | Rootless natif |
+| SPOF | Oui — crash dockerd = tout s'arrête | Non — chaque conteneur est indépendant |
+| Intégration Systemd | Contournée (propre init) | Native (unit files générés) |
+| Compatibilité images OCI | Oui | Oui |
+| Concept de Pod natif | Non | Oui |
+| Génération manifestes K8s | Non | Oui (`podman generate kube`) |
+| Licence | Docker Desktop payant (entreprises) | Apache 2.0, entièrement libre |
+| Runtime K8s possible | Non (depuis K8s 1.24) | Non (pas de socket CRI) |
+
+**Conclusion sur les Container Engines :** Podman est objectivement supérieur à Docker sur les critères de sécurité, d'intégration système et de convergence avec Kubernetes. Il est adopté comme standard dans les environnements Red Hat/Fedora et gagne du terrain dans les équipes qui ont migré de Docker. Dans ce projet, Podman est l'outil utilisé **sur le poste d'administration** pour manipuler des conteneurs en local, tester des configurations et générer des manifestes avant déploiement sur le cluster.
+
+---
+
+## 4.4) Les runtimes Kubernetes — ce que l'orchestrateur utilise réellement
+
+Un point fondamental à comprendre : **Kubernetes n'utilise pas de Container Engine**. Il n'a besoin ni de Docker ni de Podman. Ces outils sont conçus pour une interaction humaine — ils ont une CLI, une gestion d'état locale, des fonctionnalités de build. Kubernetes, lui, a besoin d'un composant serveur minimal qui répond à des appels programmatiques pour créer et détruire des conteneurs à très grande échelle.
+
+La pile réellement déployée sur chaque nœud worker d'un cluster Kubernetes est la suivante :
+
+```
+kube-apiserver (master)
+        │
+        │  API Kubernetes (HTTP/gRPC)
+        ▼
+    kubelet (agent sur chaque nœud)
+        │
+        │  Interface CRI (socket Unix, gRPC)
+        ▼
+  Runtime CRI  ──────────────────────────────────────
+  containerd  ou  CRI-O                              │
+        │                                            │
+        │  OCI Runtime Spec (config.json)            │
+        ▼                                            │
+  OCI Runtime                                        │
+  runc  ou  crun                                     │
+        │                                            │
+        │  syscalls Linux                            │
+        ▼                                            │
+    Noyau Linux                                      │
+  (namespaces · cgroups · overlayfs) ────────────────┘
+```
+
+### 4.4.1) L'interface CRI — le contrat entre Kubernetes et le runtime
+
+La **Container Runtime Interface (CRI)** est une spécification gRPC définie par le projet Kubernetes. Elle expose exactement les opérations dont le kubelet a besoin, ni plus, ni moins :
+
+- `RunPodSandbox` — créer l'espace réseau isolé d'un pod
+- `CreateContainer` / `StartContainer` — créer et démarrer un conteneur dans ce sandbox
+- `StopContainer` / `RemoveContainer` — cycle de vie
+- `PullImage` — télécharger une image depuis un registry
+- `ListContainers` / `ContainerStatus` — inspection de l'état
+
+Le kubelet ne sait pas et ne se soucie pas de ce qui implémente CRI derrière le socket. C'est un contrat pur — n'importe quelle implémentation conforme est interchangeable.
+
+### 4.4.2) Les implémentations CRI — containerd vs CRI-O
+
+Deux implémentations dominent le marché.
+
+**containerd** a été extrait du code de Docker en 2017 et donné à la CNCF, dont il est aujourd'hui un projet *graduated* (niveau de maturité maximum). Il implémente CRI via un plugin interne et expose en parallèle sa propre API gRPC publique, permettant des usages au-delà de Kubernetes : build d'images, inspection de conteneurs, intégration avec des outils tiers comme BuildKit ou Trivy. Cette polyvalence est son principal avantage opérationnel — sur un nœud de cluster, un administrateur peut utiliser `ctr` ou `nerdctl` pour inspecter manuellement ce qui tourne, sans passer par kubectl.
+
+**CRI-O** a été créé par Red Hat en 2016 avec un objectif documenté explicitement : *"to provide an integration path between OCI conformant runtimes and the kubelet"*, rien de plus. CRI-O n'a pas de CLI utilisateur, pas d'API publique, pas de fonctionnalités hors Kubernetes. Si Kubernetes est arrêté, CRI-O est inutile. Cette spécialisation extrême réduit la surface d'attaque à son minimum absolu et maintient une synchronisation de version exacte avec Kubernetes (CRI-O 1.29 est certifié pour K8s 1.29). C'est le runtime par défaut d'OpenShift.
+
+| Critère | containerd | CRI-O |
+|---|---|---|
+| Origine | Extrait de Docker → CNCF graduated | Red Hat, créé pour K8s uniquement |
+| Périmètre | Runtime K8s + API publique + usage standalone | Runtime K8s exclusivement |
+| CLI utilisateur | `ctr`, `nerdctl` | Aucune (debug via `crictl` seulement) |
+| Surface d'attaque | Modérée (code supplémentaire) | Minimale par conception |
+| Versioning | Indépendant de K8s | Synchronisé exactement avec K8s |
+| Adoption | GKE, EKS, AKS, k3s — standard de fait | OpenShift, environnements Red Hat |
+| Utilisation dans ce projet | ✅ Retenu | — |
+
+**Synthèse :** les deux runtimes CRI sont techniquement solides. containerd est retenu dans ce projet pour sa polyvalence opérationnelle — la possibilité d'inspecter les conteneurs directement sur les nœuds sans passer par l'API Kubernetes est un avantage réel en contexte de lab et en débogage de production.
+
+### 4.4.3) L'OCI Runtime — runc vs crun
+
+L'OCI Runtime est la couche la plus basse de la pile. Il reçoit une spécification de conteneur sous forme de fichier JSON normalisé par l'Open Container Initiative et effectue les appels syscalls Linux nécessaires à la création effective du conteneur : création des namespaces, configuration des cgroups, isolation du système de fichiers.
+
+**runc** est l'implémentation de référence de l'OCI, écrite en Go, créée par Docker et donnée à l'OCI en 2015. Sa conformité est garantie — c'est lui qui définit le comportement attendu par la spécification.
+
+**crun** est une réimplémentation en C développée par Red Hat. Les mesures de performance publiées et reproduites indépendamment montrent des différences significatives :
+
+| Critère | runc | crun |
+|---|---|---|
+| Langage | Go | C |
+| Temps de démarrage d'un conteneur | ~100–150 ms | ~30–50 ms |
+| Empreinte mémoire RSS | ~15 Mo | ~3–4 Mo |
+| Support cgroups v2 | Ajouté tardivement | Natif dès l'origine |
+| Rootless containers | Support limité | Support natif et complet |
+| Conformité OCI | Référence | Complète + extensions |
+
+crun est objectivement plus rapide et plus léger sur tous les critères mesurables. Ces écarts ont un impact réel en production : sur un cluster qui démarre plusieurs centaines de pods simultanément (mise à l'échelle brutale, redémarrage de nœud), la différence de temps de démarrage s'accumule. runc reste dominant uniquement par inertie historique — containerd l'utilise par défaut parce qu'il vient du même écosystème Docker, et ce défaut n'a jamais été modifié à l'échelle de l'infrastructure mondiale.
+
+---
+
+## 4.5) Interchangeabilité des composants et configuration optimisée
+
+Un point critique à comprendre : les couches CRI et OCI Runtime sont **entièrement interchangeables**. Il n'existe aucune contrainte technique qui force l'association containerd+runc ou CRI-O+crun. Ces paires dominent uniquement parce que chaque projet embarque le runtime de son écosystème d'origine par défaut.
+
+La configuration de containerd pour utiliser crun se résume à trois lignes dans `/etc/containerd/config.toml` :
+
+```toml
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+  BinaryName = "/usr/bin/crun"
+```
+
+La matrice complète des combinaisons valides et utilisées en production :
+
+| Runtime CRI | OCI Runtime | Contexte d'usage |
+|---|---|---|
+| containerd | runc | Défaut historique — majorité des clusters cloud |
+| containerd | crun | Optimal — polyvalence + performance, adoption croissante |
+| containerd | gVisor (runsc) | Isolation renforcée niveau syscall — GKE Sandbox |
+| containerd | kata-containers | Isolation niveau VM — workloads multi-tenant sensibles |
+| CRI-O | crun | Standard Red Hat / OpenShift |
+| CRI-O | runc | Valide mais rare |
+
+### 4.5.1) Modèle retenu dans ce projet : containerd + crun
+
+Le modèle **containerd + crun** est retenu pour ce projet sur la base des critères suivants.
+
+containerd offre la polyvalence opérationnelle nécessaire dans un environnement de lab et de production on-premise : inspection directe des conteneurs sur les nœuds, compatibilité avec les outils de l'écosystème CNCF (Trivy, BuildKit, Falco), et support de runtimes alternatifs pour des besoins futurs.
+
+crun remplace runc comme OCI Runtime pour bénéficier de temps de démarrage de pods réduits (~3× plus rapide), d'une empreinte mémoire minimale et d'un support natif et complet de cgroups v2 et du mode rootless — cohérent avec la philosophie de sécurité défendue dans ce projet.
+
+Ce choix correspond au modèle identifié comme optimal par les benchmarks de la communauté Kubernetes pour les déploiements on-premise en 2024-2026, et préfigure l'évolution probable des defaults des distributions Kubernetes dans les années à venir.
+
+---
+
+## 4.6) Positionnement de Podman dans l'architecture globale du projet
+
+Il convient de clarifier explicitement la place de chaque outil dans l'architecture :
+
+| Outil | Catégorie | Rôle dans ce projet | Présent sur |
+|---|---|---|---|
+| Podman | Container Engine | Manipulation de conteneurs en local, test de pods, génération de manifestes YAML | Poste d'administration |
+| containerd | Runtime CRI | Gestion du cycle de vie des conteneurs dans le cluster K8s | Chaque nœud K8s |
+| crun | OCI Runtime | Exécution effective des conteneurs via syscalls Linux | Chaque nœud K8s |
+| Docker | Container Engine | Non utilisé dans ce projet | — |
+| CRI-O | Runtime CRI | Non retenu — écosystème Red Hat/OpenShift | — |
+
+Podman et containerd ne sont pas en compétition — ils opèrent à des niveaux différents pour des usages différents. Podman est l'outil de développement et d'administration locale ; containerd est le composant serveur intégré dans le cluster. Cette séparation reflète précisément les bonnes pratiques de l'industrie : les Container Engines sont des outils humains, les runtimes CRI sont des composants d'infrastructure.
+
 # Partie 5 : Orchestration de conteneurs Kubernetes
 ## 5.1) Notions fondamentales de Kubernetes
 

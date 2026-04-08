@@ -1,4 +1,4 @@
-* FOURNIER Jérémy, Kenza AT MANE
+* FOURNIER Jérémy, Kenza NAIT ATMANE
 * Aix marseille Université M2 ASR
 
 # DevOps---JFKZ

@@ -90,14 +90,17 @@ Wiki.js constitue ainsi un cas d'étude pertinent pour illustrer les problémati
 ```
 
 --- 
-Workflow final à suivre pour déployer le lab
+# Workflow final à suivre pour déployer le lab
 
-Séquence complète de déploiement du lab, de la création des VMs jusqu'à l'état final du cluster.
-Chaque étape inclut la commande de lancement et les vérifications à effectuer avec les outputs attendus.
+> Séquence complète de déploiement du lab, de la création des VMs jusqu'à l'état final du cluster.  
+> Chaque étape inclut la commande de lancement et les vérifications à effectuer avec les outputs attendus.
 
+---
 
-Étape 0 — Provisionnement Terraform
-bashcd /devops/terraform/
+## Étape 0 — Provisionnement Terraform
+
+```bash
+cd /devops/terraform/
 
 # Reset complet de l'état Terraform (rebuild from scratch)
 rm -rf .terraform .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
@@ -105,144 +108,320 @@ rm -rf .terraform .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
 terraform init
 terraform plan
 terraform apply
-Résultat attendu : 4 VMs créées sur KVM/libvirt :
-VMHostnameIPRôleVM1tf-k8s-master192.168.122.150Control-plane KubernetesVM2tf-k8s-node-1192.168.122.151Worker nodeVM3tf-k8s-node-2192.168.122.152Worker nodeVM4tf-db-postgres192.168.122.153Base de données PostgreSQL
+```
 
-Étape 0.5 — Nettoyage des clés SSH connues
+**Résultat attendu :** 4 VMs créées sur KVM/libvirt :
 
-À faire avant chaque rebuild pour éviter les erreurs REMOTE HOST IDENTIFICATION HAS CHANGED.
+|VM|Hostname|IP|Rôle|
+|---|---|---|---|
+|VM1|tf-k8s-master|192.168.122.150|Control-plane Kubernetes|
+|VM2|tf-k8s-node-1|192.168.122.151|Worker node|
+|VM3|tf-k8s-node-2|192.168.122.152|Worker node|
+|VM4|tf-db-postgres|192.168.122.153|Base de données PostgreSQL|
 
-bashssh-keygen -f '/home/jeremy/.ssh/known_hosts' -R '192.168.122.150'
+---
+
+## Étape 0.5 — Nettoyage des clés SSH connues
+
+> À faire avant chaque rebuild pour éviter les erreurs `REMOTE HOST IDENTIFICATION HAS CHANGED`.
+
+```bash
+ssh-keygen -f '/home/jeremy/.ssh/known_hosts' -R '192.168.122.150'
 ssh-keygen -f '/home/jeremy/.ssh/known_hosts' -R '192.168.122.151'
 ssh-keygen -f '/home/jeremy/.ssh/known_hosts' -R '192.168.122.152'
 ssh-keygen -f '/home/jeremy/.ssh/known_hosts' -R '192.168.122.153'
+```
 
-Étape 1 — K8s Master : initialisation du cluster
-bashcd /devops/ansible/
+---
+
+## Étape 1 — K8s Master : initialisation du cluster
+
+```bash
+cd /devops/ansible/
 ansible-playbook -i inventory.ini 1-deploy-k8s-master.yaml
-Durée approximative : ~2min30
-Vérifications :
-bash# Node master Ready + rôle control-plane
+```
+
+**Durée approximative :** ~2min30
+
+**Vérifications :**
+
+```bash
+# Node master Ready + rôle control-plane
 ssh ansible@192.168.122.150 "kubectl get nodes -o wide"
+```
+
+```
 NAME            STATUS   ROLES           AGE   VERSION    INTERNAL-IP       EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
 tf-k8s-master   Ready    control-plane   92s   v1.29.15   192.168.122.150   <none>        Ubuntu 24.04.4 LTS   6.8.0-107-generic   containerd://2.2.1
-bash# Calico Running (le calico-kube-controllers peut être en CrashLoopBackOff ~1min, c'est normal)
+```
+
+```bash
+# Calico Running (le calico-kube-controllers peut être en CrashLoopBackOff ~1min, c'est normal)
 ssh ansible@192.168.122.150 "kubectl -n kube-system get pods | grep calico"
+```
+
+```
 calico-kube-controllers-5fc7d6cf67-dmls2   1/1     Running   3 (42s ago)   3m11s
 calico-node-7q2v8                          1/1     Running   0             3m12s
-bash# DaemonSet calico-node rolled out
+```
+
+```bash
+# DaemonSet calico-node rolled out
 ssh ansible@192.168.122.150 "kubectl -n kube-system rollout status ds/calico-node"
+```
+
+```
 daemon set "calico-node" successfully rolled out
-bash# Fichier join-workers.sh présent sur le controller Ansible
+```
+
+```bash
+# Fichier join-workers.sh présent sur le controller Ansible
 ls ./artifacts/join-workers.sh
+```
+
+```
 ./artifacts/join-workers.sh
+```
 
-Note : L'API server peut redémarrer brièvement (~30s) juste après l'init si le master manque de RAM. Attendre que kubectl get nodes réponde avant de continuer.
+> **Note :** L'API server peut redémarrer brièvement (~30s) juste après l'init si le master manque de RAM. Attendre que `kubectl get nodes` réponde avant de continuer.
 
+---
 
-Étape 2 — K8s Workers : join du cluster
-bashansible-playbook -i inventory.ini 2-deploy-k8s-workers.yaml
-Durée approximative : ~2min
-Vérifications :
-bash# 3 nodes Ready
+## Étape 2 — K8s Workers : join du cluster
+
+```bash
+ansible-playbook -i inventory.ini 2-deploy-k8s-workers.yaml
+```
+
+**Durée approximative :** ~2min
+
+**Vérifications :**
+
+```bash
+# 3 nodes Ready
 ssh ansible@192.168.122.150 "kubectl get nodes -o wide"
+```
+
+```
 NAME            STATUS   ROLES           AGE     VERSION    INTERNAL-IP       EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
 tf-k8s-master   Ready    control-plane   6m38s   v1.29.15   192.168.122.150   <none>        Ubuntu 24.04.4 LTS   6.8.0-107-generic   containerd://2.2.1
 tf-k8s-node-1   Ready    <none>          81s     v1.29.15   192.168.122.151   <none>        Ubuntu 24.04.4 LTS   6.8.0-107-generic   containerd://2.2.1
 tf-k8s-node-2   Ready    <none>          81s     v1.29.15   192.168.122.152   <none>        Ubuntu 24.04.4 LTS   6.8.0-107-generic   containerd://2.2.1
-bash# 3 pods calico-node (un par node)
+```
+
+```bash
+# 3 pods calico-node (un par node)
 ssh ansible@192.168.122.150 "kubectl -n kube-system get pods -o wide | grep calico-node"
+```
+
+```
 calico-node-4522q   1/1   Running   0   87s    192.168.122.152   tf-k8s-node-2   <none>   <none>
 calico-node-7q2v8   1/1   Running   0   5m52s  192.168.122.150   tf-k8s-master   <none>   <none>
 calico-node-xnwtk   1/1   Running   0   87s    192.168.122.151   tf-k8s-node-1   <none>   <none>
+```
 
-Étape 3 — PostgreSQL : base de données Wiki.js
-bashansible-playbook -i inventory.ini 3-deploy-db-postgres.yaml
-Durée approximative : ~40s
-Vérifications :
-bash# Container postgres-db Up
+---
+
+## Étape 3 — PostgreSQL : base de données Wiki.js
+
+```bash
+ansible-playbook -i inventory.ini 3-deploy-db-postgres.yaml
+```
+
+**Durée approximative :** ~40s
+
+**Vérifications :**
+
+```bash
+# Container postgres-db Up
 ssh ansible@192.168.122.153 "sudo -u ansible podman ps"
+```
+
+```
 CONTAINER ID  IMAGE                          COMMAND    CREATED        STATUS        PORTS                   NAMES
 167701f3f053  docker.io/library/postgres:16  postgres   11 sec ago     Up 12 sec     0.0.0.0:5432->5432/tcp  postgres-db
-bash# Base wiki accessible
+```
+
+```bash
+# Base wiki accessible
 ssh ansible@192.168.122.153 "sudo -u ansible podman exec postgres-db pg_isready -U postgres -d wiki"
+```
+
+```
 /var/run/postgresql:5432 - accepting connections
-bash# Port 5432 en écoute
+```
+
+```bash
+# Port 5432 en écoute
 ssh ansible@192.168.122.153 "ss -lntH sport = :5432"
+```
+
+```
 LISTEN 0   4096   *:5432   *:*
-bash# Service systemd rootless actif (connexion directe en tant qu'ansible, pas sudo)
+```
+
+```bash
+# Service systemd rootless actif (connexion directe en tant qu'ansible, pas sudo)
 ssh ansible@192.168.122.153 "systemctl --user status container-postgres-db"
+```
+
+```
 ● container-postgres-db.service
      Loaded: loaded (/home/ansible/.config/systemd/user/container-postgres-db.service; enabled)
      Active: active (running)
+```
 
-Paramètres de connexion pour Wiki.js : DB_HOST=192.168.122.153 | DB_PORT=5432 | DB_NAME=wiki | DB_USER=postgres | DB_PASS=postgres
+> **Paramètres de connexion pour Wiki.js :** `DB_HOST=192.168.122.153` | `DB_PORT=5432` | `DB_NAME=wiki` | `DB_USER=postgres` | `DB_PASS=postgres`
 
+---
 
-Étape 4 — MetalLB : load balancer L2
-bashansible-playbook -i inventory.ini 4-deploy-metallb.yaml
-Durée approximative : ~1min30
-Vérifications :
-bash# controller + 2 speakers Running (workers uniquement)
+## Étape 4 — MetalLB : load balancer L2
+
+```bash
+ansible-playbook -i inventory.ini 4-deploy-metallb.yaml
+```
+
+**Durée approximative :** ~1min30
+
+**Vérifications :**
+
+```bash
+# controller + 2 speakers Running (workers uniquement)
 ssh ansible@192.168.122.150 "kubectl -n metallb-system get pods"
+```
+
+```
 NAME                          READY   STATUS    RESTARTS   AGE
 controller-77676c78d9-zklcn   1/1     Running   0          89s
 speaker-5wdjp                 1/1     Running   0          59s
 speaker-b6wt6                 1/1     Running   0          38s
-bash# nodeSelector speaker : workers seulement
+```
+
+```bash
+# nodeSelector speaker : workers seulement
 ssh ansible@192.168.122.150 "kubectl -n metallb-system get ds speaker -o jsonpath='{.spec.template.spec.nodeSelector}'"
+```
+
+```
 {"kubernetes.io/os":"linux","metallb-speaker":"true"}
-bash# Pool d'IPs configuré
+```
+
+```bash
+# Pool d'IPs configuré
 ssh ansible@192.168.122.150 "kubectl get ipaddresspools.metallb.io -A"
+```
+
+```
 NAMESPACE        NAME       AUTO ASSIGN   AVOID BUGGY IPS   ADDRESSES
 metallb-system   lab-pool   true          false             ["192.168.122.200-192.168.122.220"]
-bash# L2Advertisement active
+```
+
+```bash
+# L2Advertisement active
 ssh ansible@192.168.122.150 "kubectl get l2advertisements.metallb.io -A"
+```
+
+```
 NAMESPACE        NAME        IPADDRESSPOOLS   IPADDRESSPOOL SELECTORS   INTERFACES
 metallb-system   lab-l2adv   ["lab-pool"]
+```
 
-Étape 5 — Ingress-NGINX : contrôleur HTTP
-bashansible-playbook -i inventory.ini 5-deploy-ingress-nginx.yaml
-Durée approximative : ~25s (idempotent si déjà déployé)
+---
 
-Note : Si l'API server est encore sous charge après les étapes précédentes, le playbook peut échouer avec connection refused. Relancer simplement une fois que kubectl get nodes répond.
+## Étape 5 — Ingress-NGINX : contrôleur HTTP
 
-Vérifications :
-bash# 2 controllers Running
+```bash
+ansible-playbook -i inventory.ini 5-deploy-ingress-nginx.yaml
+```
+
+**Durée approximative :** ~25s (idempotent si déjà déployé)
+
+> **Note :** Si l'API server est encore sous charge après les étapes précédentes, le playbook peut échouer avec `connection refused`. Relancer simplement une fois que `kubectl get nodes` répond.
+
+**Vérifications :**
+
+```bash
+# 2 controllers Running
 ssh ansible@192.168.122.150 "kubectl -n ingress-nginx get pods"
+```
+
+```
 NAME                                       READY   STATUS      RESTARTS   AGE
 ingress-nginx-admission-create-pp67l       0/1     Completed   0          6m38s
 ingress-nginx-admission-patch-8lnd7        0/1     Completed   1          6m38s
 ingress-nginx-controller-d68d99588-5v7c8   1/1     Running     5          6m38s
 ingress-nginx-controller-d68d99588-rv5vg   1/1     Running     5          6m38s
-bash# EXTERNAL-IP assignée par MetalLB
+```
+
+```bash
+# EXTERNAL-IP assignée par MetalLB
 ssh ansible@192.168.122.150 "kubectl -n ingress-nginx get svc ingress-nginx-controller"
+```
+
+```
 NAME                       TYPE           CLUSTER-IP    EXTERNAL-IP       PORT(S)                      AGE
 ingress-nginx-controller   LoadBalancer   10.106.3.99   192.168.122.200   80:31274/TCP,443:31800/TCP   6m43s
-bash# Ingress répond (404 = normal, aucune rule définie à ce stade)
-curl -I http://192.168.122.200
-HTTP/1.1 404 Not Found
+```
 
-Étape 6 — Metrics Server : HPA + kubectl top
-bashansible-playbook -i inventory.ini 6-deploy-metrics-server.yaml
-Durée approximative : ~35s
-Vérifications :
-bash# Deployment Ready
+```bash
+# Ingress répond (404 = normal, aucune rule définie à ce stade)
+curl -I http://192.168.122.200
+```
+
+```
+HTTP/1.1 404 Not Found
+```
+
+---
+
+## Étape 6 — Metrics Server : HPA + kubectl top
+
+```bash
+ansible-playbook -i inventory.ini 6-deploy-metrics-server.yaml
+```
+
+**Durée approximative :** ~35s
+
+**Vérifications :**
+
+```bash
+# Deployment Ready
 ssh ansible@192.168.122.150 "kubectl -n kube-system get deploy metrics-server"
+```
+
+```
 NAME             READY   UP-TO-DATE   AVAILABLE   AGE
 metrics-server   1/1     1            1           42s
-bash# APIService disponible
+```
+
+```bash
+# APIService disponible
 ssh ansible@192.168.122.150 "kubectl get apiservice v1beta1.metrics.k8s.io"
+```
+
+```
 NAME                     SERVICE                      AVAILABLE   AGE
 v1beta1.metrics.k8s.io   kube-system/metrics-server   True        46s
-bash# Métriques nodes
+```
+
+```bash
+# Métriques nodes
 ssh ansible@192.168.122.150 "kubectl top nodes"
+```
+
+```
 NAME            CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
 tf-k8s-master   210m         10%    1618Mi          20%
 tf-k8s-node-1   110m         5%     462Mi           5%
 tf-k8s-node-2   123m         6%     492Mi           6%
-bash# Métriques pods (collecte pod-level validée, requis pour HPA)
+```
+
+```bash
+# Métriques pods (collecte pod-level validée, requis pour HPA)
 ssh ansible@192.168.122.150 "kubectl top pods -n kube-system"
+```
+
+```
 NAME                                       CPU(cores)   MEMORY(bytes)
 calico-kube-controllers-5fc7d6cf67-dmls2   5m           51Mi
 calico-node-4522q                          70m          115Mi
@@ -258,9 +437,9 @@ kube-proxy-8k9nh                           4m           61Mi
 kube-proxy-jx72j                           6m           10Mi
 kube-scheduler-tf-k8s-master               7m           65Mi
 metrics-server-6db6cd6674-zph8s            16m          16Mi
+```
 
-
-``
+```
 ansible-playbook -i inventory.ini 7-deploy-wikijs-init.yaml
 
 - EMAIL : test@gmail.com

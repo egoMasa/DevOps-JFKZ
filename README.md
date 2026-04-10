@@ -438,12 +438,13 @@ kube-proxy-jx72j                           6m           10Mi
 kube-scheduler-tf-k8s-master               7m           65Mi
 metrics-server-6db6cd6674-zph8s            16m          16Mi
 ```
-
 ## Étape 7 — Wiki.js Init : déploiement initial (1 replica)
 
 ```bash
 ansible-playbook -i inventory.ini 7-deploy-wikijs-init.yaml
 ```
+
+**Durée approximative :** ~1min10
 
 **Vérifications :**
 
@@ -453,7 +454,7 @@ ssh ansible@192.168.122.150 "kubectl -n wikijs get pods"
 
 ```
 NAME                      READY   STATUS    RESTARTS   AGE
-wikijs-xxxxxxxxx-xxxxx    1/1     Running   0          Xs
+wikijs-55d6b8c785-brw7k   1/1     Running   0          58s
 ```
 
 ```bash
@@ -462,7 +463,16 @@ ssh ansible@192.168.122.150 "kubectl -n wikijs get ingress"
 
 ```
 NAME     CLASS   HOSTS        ADDRESS           PORTS   AGE
-wikijs   nginx   wikijs.lab   192.168.122.200   80      Xs
+wikijs   nginx   wikijs.lab   192.168.122.200   80      110s
+```
+
+Les logs confirment que Wiki.js est en mode setup wizard et que la connexion PostgreSQL est établie :
+
+```
+Database Connection Successful [ OK ]
+DB Configuration is empty or incomplete. Switching to Setup mode...
+Starting setup wizard...
+HTTP Server on port: [ 3000 ]
 ```
 
 ### ⚠ Étape manuelle obligatoire — Setup wizard Wiki.js
@@ -491,6 +501,8 @@ Ouvrir `http://wikijs.lab` dans le navigateur et compléter le setup wizard :
 ansible-playbook -i inventory.ini 8-deploy-wikijs-scale.yaml
 ```
 
+**Durée approximative :** ~2min
+
 **Vérifications finales — état cible du cluster :**
 
 ```bash
@@ -503,17 +515,17 @@ kubectl get pods,svc,ingress,hpa -n wikijs
 
 ```
 NAME                          READY   STATUS    RESTARTS   AGE
-pod/wikijs-xxxxxxxxx-xxxxx    1/1     Running   0          Xm
-pod/wikijs-xxxxxxxxx-xxxxx    1/1     Running   0          Xm
+pod/wikijs-5bb7ddbf5b-bkgjf   1/1     Running   0          2m
+pod/wikijs-5bb7ddbf5b-kh9mq   1/1     Running   0          2m27s
 
 NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-service/wikijs   ClusterIP   10.xxx.xxx.xxx  <none>        3000/TCP  Xm
+service/wikijs   ClusterIP   10.111.113.67   <none>        80/TCP    11m
 
 NAME                               CLASS   HOSTS        ADDRESS           PORTS   AGE
-ingress.networking.k8s.io/wikijs   nginx   wikijs.lab   192.168.122.200   80      Xm
+ingress.networking.k8s.io/wikijs   nginx   wikijs.lab   192.168.122.200   80      11m
 
-NAME                                    REFERENCE           TARGETS   MINPODS   MAXPODS   REPLICAS
-horizontalpodautoscaler.autoscaling/wikijs   Deployment/wikijs   2%/70%    2         5         2
+NAME                                         REFERENCE           TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/wikijs   Deployment/wikijs   1%/70%    2         5         2          68s
 ```
 
 ```bash
@@ -521,14 +533,70 @@ kubectl top pods -n wikijs
 ```
 
 ```
-NAME                     CPU(cores)   MEMORY(bytes)
-wikijs-xxxxxxxxx-xxxxx   Xm           XXXMi
-wikijs-xxxxxxxxx-xxxxx   Xm           XXXMi
+NAME                      CPU(cores)   MEMORY(bytes)
+wikijs-5bb7ddbf5b-bkgjf   2m           129Mi
+wikijs-5bb7ddbf5b-kh9mq   1m           126Mi
 ```
 
 ```bash
 # Vue globale complète du cluster
 kubectl get nodes,pods,svc,ingress,ep,pvc,hpa -A
+```
+
+```
+NAME                 STATUS   ROLES           AGE     VERSION
+node/tf-k8s-master   Ready    control-plane   6h      v1.29.15
+node/tf-k8s-node-1   Ready    <none>          5h55m   v1.29.15
+node/tf-k8s-node-2   Ready    <none>          5h55m   v1.29.15
+
+NAMESPACE        NAME                                           READY   STATUS      RESTARTS      AGE
+ingress-nginx    pod/ingress-nginx-admission-create-pp67l       0/1     Completed   0             5h49m
+ingress-nginx    pod/ingress-nginx-admission-patch-8lnd7        0/1     Completed   1             5h49m
+ingress-nginx    pod/ingress-nginx-controller-d68d99588-5v7c8   1/1     Running     6 (13m ago)   5h49m
+ingress-nginx    pod/ingress-nginx-controller-d68d99588-rv5vg   1/1     Running     6 (13m ago)   5h49m
+kube-system      pod/calico-kube-controllers-5fc7d6cf67-dmls2   1/1     Running     5 (13m ago)   5h59m
+kube-system      pod/calico-node-4522q                          1/1     Running     1 (13m ago)   5h55m
+kube-system      pod/calico-node-7q2v8                          1/1     Running     2 (13m ago)   5h59m
+kube-system      pod/calico-node-xnwtk                          1/1     Running     1 (13m ago)   5h55m
+kube-system      pod/coredns-76f75df574-2p7qw                   1/1     Running     4 (13m ago)   5h59m
+kube-system      pod/coredns-76f75df574-bp2bs                   1/1     Running     4 (13m ago)   5h59m
+kube-system      pod/etcd-tf-k8s-master                         1/1     Running     3 (13m ago)   5h59m
+kube-system      pod/kube-apiserver-tf-k8s-master               1/1     Running     4 (13m ago)   5h59m
+kube-system      pod/kube-controller-manager-tf-k8s-master      1/1     Running     4 (13m ago)   5h59m
+kube-system      pod/kube-proxy-27lkj                           1/1     Running     1 (13m ago)   5h55m
+kube-system      pod/kube-proxy-8k9nh                           1/1     Running     3 (13m ago)   5h59m
+kube-system      pod/kube-proxy-jx72j                           1/1     Running     1 (13m ago)   5h55m
+kube-system      pod/kube-scheduler-tf-k8s-master               1/1     Running     4 (13m ago)   5h59m
+kube-system      pod/metrics-server-6db6cd6674-zph8s            1/1     Running     1 (13m ago)   5h41m
+metallb-system   pod/controller-77676c78d9-zklcn                1/1     Running     1 (13m ago)   5h51m
+metallb-system   pod/speaker-5wdjp                              1/1     Running     2 (12m ago)   5h50m
+metallb-system   pod/speaker-b6wt6                              1/1     Running     2 (12m ago)   5h50m
+wikijs           pod/wikijs-5bb7ddbf5b-bkgjf                    1/1     Running     0             2m44s
+wikijs           pod/wikijs-5bb7ddbf5b-kh9mq                    1/1     Running     0             3m11s
+
+NAMESPACE        NAME                                         TYPE           CLUSTER-IP       EXTERNAL-IP       PORT(S)                      AGE
+default          service/kubernetes                           ClusterIP      10.96.0.1        <none>            443/TCP                      6h
+ingress-nginx    service/ingress-nginx-controller             LoadBalancer   10.106.3.99      192.168.122.200   80:31274/TCP,443:31800/TCP   5h49m
+ingress-nginx    service/ingress-nginx-controller-admission   ClusterIP      10.102.90.172    <none>            443/TCP                      5h49m
+kube-system      service/kube-dns                             ClusterIP      10.96.0.10       <none>            53/UDP,53/TCP,9153/TCP       6h
+kube-system      service/metrics-server                       ClusterIP      10.103.215.120   <none>            443/TCP                      5h41m
+metallb-system   service/metallb-webhook-service              ClusterIP      10.106.169.103   <none>            443/TCP                      5h51m
+wikijs           service/wikijs                               ClusterIP      10.111.113.67    <none>            80/TCP                       12m
+
+NAMESPACE   NAME                               CLASS   HOSTS        ADDRESS           PORTS   AGE
+wikijs      ingress.networking.k8s.io/wikijs   nginx   wikijs.lab   192.168.122.200   80      12m
+
+NAMESPACE        NAME                                           ENDPOINTS                                                            AGE
+default          endpoints/kubernetes                           192.168.122.150:6443                                                 6h
+ingress-nginx    endpoints/ingress-nginx-controller             10.244.121.197:443,10.244.177.68:443,10.244.121.197:80 + 1 more...   5h49m
+ingress-nginx    endpoints/ingress-nginx-controller-admission   10.244.121.197:8443,10.244.177.68:8443                               5h49m
+kube-system      endpoints/kube-dns                             10.244.165.13:53,10.244.165.14:53,10.244.165.13:53 + 3 more...       5h59m
+kube-system      endpoints/metrics-server                       10.244.121.199:10250                                                 5h41m
+metallb-system   endpoints/metallb-webhook-service              10.244.121.198:9443                                                  5h51m
+wikijs           endpoints/wikijs                               10.244.121.201:3000,10.244.177.70:3000                               12m
+
+NAMESPACE   NAME                                         REFERENCE           TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+wikijs      horizontalpodautoscaler.autoscaling/wikijs   Deployment/wikijs   0%/70%    2         5         2          112s
 ```
 
 
@@ -616,7 +684,7 @@ Disk(s):	/dev/vda
 Country:	France
 Timezone:	Europe/Paris
 Keymap:	fr
-Email:	jeremyfournier203@gmail.com
+Email:	test@mail.com
 Management Interface:	nic0
 Hostname:	proxmox
 IP CIDR:	192.168.122.108/24

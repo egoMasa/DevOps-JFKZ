@@ -1,19 +1,26 @@
 # ============================================================
 # Playbook : Installation Complète et Initialisation MASTER
-# Fichier  : deploy_k8s_master.yml
+# Fichier  : 1-deploy-k8s-master.yaml
 #
 # Objectifs :
 # 1) OS baseline K8s (swap, modules, sysctl)
-# 2) containerd stable (SystemdCgroup=true)
+# 2) containerd stable (SystemdCgroup=true) — IDEMPOTENT
 # 3) Installation kubeadm/kubelet/kubectl via pkgs.k8s.io (v1.29.x)
 # 4) kubeadm init (idempotent)
 # 5) Calico install + attente réelle (DaemonSet + CNI file)
 # 6) Patch IPPool (VXLAN + natOutgoing) seulement quand Calico est up
 # 7) Join command
+#
+# FIXES v2 :
+#   - Suppression du module "bridge" (inutile, br_netfilter suffit,
+#     et il n'était pas persisté dans k8s.conf → incohérence au reboot)
+#   - containerd config default avec "creates:" → IDEMPOTENT
+#     (le worker l'avait déjà, le master ne l'avait pas)
+#   - hosts: k8s_master (groupe) au lieu du hostname direct
 # ============================================================
 
 - name: "K8S MASTER | Installation et Initialisation"
-  hosts: tf-k8s-master
+  hosts: k8s_master
   become: true
 
   vars:
@@ -31,7 +38,7 @@
     join_cmd_local_dir: "./artifacts"
     join_cmd_local_path: "./artifacts/join-workers.sh"
 
-    # LAB: à mettre true UNE fois si tu rebuild
+    # LAB: passer à true UNE fois si tu rebuilds
     force_reset: false
 
   pre_tasks:
@@ -59,21 +66,23 @@
         regexp: '^\s*([^#].*\sswap\s.*)$'
         replace: '# \1'
 
+    # FIX: "bridge" retiré — br_netfilter inclut déjà la fonctionnalité
+    # nécessaire pour le netfiltering sur les bridges. Charger "bridge"
+    # séparément n'est pas requis par Kubernetes et créait une incohérence
+    # avec le playbook worker + non-persistance dans k8s.conf.
     - name: Load required kernel modules immediately
       modprobe:
         name: "{{ item }}"
         state: present
       loop:
         - overlay
-        - bridge
         - br_netfilter
 
-    - name: Persist kernel modules
+    - name: Persist kernel modules (cohérent avec ce qui est chargé)
       copy:
         dest: /etc/modules-load.d/k8s.conf
         content: |
           overlay
-          bridge
           br_netfilter
         mode: "0644"
 
@@ -85,11 +94,11 @@
           net.bridge.bridge-nf-call-ip6tables = 1
           net.ipv4.ip_forward                 = 1
 
-          # Important en overlay (évite des NotReady chelous)
+          # Calico VXLAN (évite des NotReady aléatoires)
           net.ipv4.conf.all.rp_filter         = 0
           net.ipv4.conf.default.rp_filter     = 0
 
-          # Utile plus tard pour MetalLB L2 (évite ICMP redirects)
+          # MetalLB L2 (évite ICMP redirects)
           net.ipv4.conf.all.send_redirects    = 0
           net.ipv4.conf.default.send_redirects= 0
         mode: "0644"
@@ -120,8 +129,14 @@
         state: directory
         mode: "0755"
 
-    - name: Generate default containerd config (always) for consistency
+    # FIX: ajout de "creates:" pour l'idempotence.
+    # Sans ça, le fichier était écrasé à chaque run (supprimant le
+    # SystemdCgroup=true déjà appliqué). Le playbook worker avait
+    # déjà ce "creates:" — on aligne le master sur le même comportement.
+    - name: Generate default containerd config (idempotent)
       shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
 
     - name: Enable systemd cgroup driver
       replace:
@@ -236,7 +251,7 @@
         timeout: 300
 
     # ------------------------------------------------------------
-    # 8) Calico install + waits "réels"
+    # 8) Calico install + waits réels
     # ------------------------------------------------------------
     - block:
         - name: Apply Calico manifest
@@ -286,7 +301,7 @@
 
         - name: Fail with explicit message
           fail:
-            msg: "Calico/CNI not ready -> see debug output above (pods, node describe, kubelet logs)."
+            msg: "Calico/CNI not ready -> voir les outputs debug ci-dessus (pods, node describe, kubelet logs)."
 
     # ------------------------------------------------------------
     # 9) Join command

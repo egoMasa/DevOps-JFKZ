@@ -1,14 +1,19 @@
 # ============================================================
 # Playbook : Deploy Ingress-NGINX (Kustomize)
-# Fichier  : deploy-ingress-nginx.yaml
+# Fichier  : 5-deploy-ingress-nginx.yaml
+#
+# FIXES v2 :
+#   - hosts: k8s_master (groupe) au lieu du hostname direct
+#   - expected_lb_ip définie comme var séparée (cohérence avec
+#     le pool MetalLB défini dans le repo)
 # ============================================================
 
 - name: "K8S ADDON | Deploy Ingress-NGINX"
-  hosts: tf-k8s-master
+  hosts: k8s_master
   become: true
 
   vars:
-    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"  # <-- ajuste si besoin
+    repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"
     repo_version: "main"
     repo_dest: "/opt/devops-jfkz"
 
@@ -16,7 +21,7 @@
 
     ingress_kustomize_dir: "{{ repo_dest }}/k8s/01-ingress-nginx"
 
-    # l’IP attendue (doit être dans ton pool MetalLB)
+    # IP attendue — doit correspondre au pool MetalLB défini dans metallb-config.yaml
     expected_lb_ip: "192.168.122.200"
 
   environment:

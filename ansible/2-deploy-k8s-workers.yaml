@@ -1,6 +1,6 @@
 # ============================================================
 # Playbook : Installation des WORKERS + Join Cluster
-# Fichier  : deploy_k8s_workers.yml
+# Fichier  : 2-deploy-k8s-workers.yaml
 #
 # Objectifs :
 # 1) OS baseline K8s (swap, modules, sysctl overlay + VIP L2)
@@ -8,6 +8,11 @@
 # 3) kubeadm/kubelet (v1.29)
 # 4) Join cluster (idempotent)
 # 5) Post-check depuis master (Ready + calico-node OK)
+#
+# FIXES v2 :
+#   - KUBECONFIG explicite sur toutes les tâches kubectl du post-check
+#     (évite le fallback silencieux sur localhost:8080 si le kubeconfig
+#      de l'user ansible n'est pas encore en place)
 # ============================================================
 
 - name: "K8S WORKERS | Installation + Join"
@@ -67,7 +72,7 @@
         replace: '# \1'
 
     # ------------------------------------------------------------
-    # 2) Kernel modules + sysctl (IDENTIQUE MASTER)
+    # 2) Kernel modules + sysctl
     # ------------------------------------------------------------
     - name: Load kernel modules
       modprobe:
@@ -140,7 +145,7 @@
         state: directory
         mode: "0755"
 
-    - name: Generate default containerd config
+    - name: Generate default containerd config (idempotent)
       shell: containerd config default > /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
@@ -234,13 +239,18 @@
 # ============================================================
 
 - name: "K8S CLUSTER | Validation post-join"
-  hosts: tf-k8s-master
+  hosts: k8s_master
   become: true
 
   vars:
     kubeconfig_user: "ansible"
+    kubeconfig_path: "/home/ansible/.kube/config"
 
   tasks:
+    # FIX: KUBECONFIG explicite sur toutes les tâches kubectl.
+    # Sans ça, un become_user: ansible sans KUBECONFIG dans l'env
+    # peut silencieusement tomber sur localhost:8080 si ~/.kube/config
+    # n'est pas encore accessible depuis le contexte become.
     - name: Wait for all nodes Ready
       become_user: "{{ kubeconfig_user }}"
       shell: |
@@ -252,8 +262,24 @@
         exit 1
       args:
         executable: /bin/bash
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
 
     - name: Ensure calico-node stable on all nodes
       become_user: "{{ kubeconfig_user }}"
       command: kubectl -n kube-system rollout status ds/calico-node --timeout=180s
       changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    - name: Show final cluster state
+      become_user: "{{ kubeconfig_user }}"
+      command: kubectl get nodes -o wide
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      register: nodes_out
+
+    - name: Print cluster state
+      debug:
+        msg: "{{ nodes_out.stdout }}"

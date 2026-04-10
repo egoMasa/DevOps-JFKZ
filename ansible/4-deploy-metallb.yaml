@@ -1,60 +1,46 @@
 # ============================================================
 # Playbook : Deploy MetalLB
-# Fichier  : deploy-metallb.yaml
+# Fichier  : 4-deploy-metallb.yaml
 #
 # Objectifs :
 # 1) Récupérer les manifests (repo Git)
 # 2) Labelliser les nodes (speaker uniquement sur les workers)
 # 3) Installer MetalLB (manifest officiel : CRDs + controller + speaker)
 # 4) PATCH du DaemonSet speaker -> nodeSelector metallb-speaker=true
-#    (sinon speaker peut tourner aussi sur le master)
 # 5) Appliquer la config MetalLB (IPAddressPool + L2Advertisement)
 # 6) Vérifications (pods / pools / l2adv)
+#
+# FIXES v2 :
+#   - hosts: k8s_master (groupe) au lieu du hostname direct tf-k8s-master
 # ============================================================
 
 - name: "K8S ADDON | Deploy MetalLB"
-  hosts: tf-k8s-master
+  hosts: k8s_master
   become: true
 
   vars:
-    # ------------------------------------------------------------
-    # Repo Git (tes manifests: metallb-config.yaml, etc.)
-    # ------------------------------------------------------------
     repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"
     repo_version: "main"
     repo_dest: "/opt/devops-jfkz"
 
-    # ------------------------------------------------------------
-    # Accès kubectl côté master
-    # ------------------------------------------------------------
     kubeconfig_path: "/etc/kubernetes/admin.conf"
 
-    # ------------------------------------------------------------
-    # Manifeste officiel MetalLB
-    # ------------------------------------------------------------
     metallb_native_url: "https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml"
 
-    # ------------------------------------------------------------
-    # Ton fichier de config MetalLB (Pool + L2Adv)
-    # -> Dans ton repo : k8s/00-metallb/metallb-config.yaml
-    # ------------------------------------------------------------
+    # Fichier de config MetalLB dans le repo (Pool + L2Adv)
     metallb_config_file: "{{ repo_dest }}/k8s/00-metallb/metallb-config.yaml"
 
-    # ------------------------------------------------------------
-    # Label utilisé pour contrôler où tourne le speaker
-    # ------------------------------------------------------------
     metallb_speaker_label_key: "metallb-speaker"
 
-    # Nodes workers (où tu veux le speaker)
+    # Nodes workers (speaker)
     metallb_workers:
       - tf-k8s-node-1
       - tf-k8s-node-2
 
-    # Node master (où tu NE veux PAS le speaker)
+    # Master (pas de speaker)
     metallb_master_node: "tf-k8s-master"
 
   environment:
-    # Tous les kubectl de ce playbook utilisent ce kubeconfig
     KUBECONFIG: "{{ kubeconfig_path }}"
 
   tasks:
@@ -99,13 +85,12 @@
       changed_when: "'labeled' in (metallb_label_master.stdout | default(''))"
 
     # ------------------------------------------------------------
-    # 2) Install MetalLB (officiel)
+    # 2) Install MetalLB
     # ------------------------------------------------------------
     - name: Install MetalLB (official manifest)
       command: kubectl apply -f {{ metallb_native_url }}
       register: metallb_native_apply
 
-    # Les CRDs doivent exister avant d'appliquer IPAddressPool / L2Advertisement
     - name: Wait for MetalLB CRDs
       shell: |
         set -e
@@ -124,11 +109,9 @@
       changed_when: false
 
     # ------------------------------------------------------------
-    # 3) Patch speaker DaemonSet (IMPORTANT)
-    # -> force speaker uniquement sur nodes metallb-speaker=true
-    # Sans ça, speaker peut se lancer aussi sur master.
+    # 3) Patch speaker DaemonSet
     # ------------------------------------------------------------
-    - name: Patch MetalLB speaker DaemonSet to run only on metallb-speaker=true
+    - name: Patch MetalLB speaker DaemonSet (speaker sur workers uniquement)
       command: >
         kubectl -n metallb-system patch ds speaker --type='merge' -p
         '{"spec":{"template":{"spec":{"nodeSelector":{"metallb-speaker":"true"}}}}}'
@@ -145,7 +128,7 @@
       changed_when: false
 
     # ------------------------------------------------------------
-    # 4) Apply MetalLB configuration (Pool + L2)
+    # 4) Apply MetalLB configuration
     # ------------------------------------------------------------
     - name: Apply MetalLB configuration (IPAddressPool + L2Advertisement)
       command: kubectl apply -f {{ metallb_config_file }}
@@ -178,23 +161,23 @@
       debug:
         msg: |
           ================================
-          ✅ MetalLB Deployment OK
+          MetalLB Deployment OK
           ================================
 
-          ▶ Apply (native)
+          Apply (native)
           {{ metallb_native_apply.stdout | default('') }}
 
-          ▶ Patch speaker nodeSelector
+          Patch speaker nodeSelector
           {{ metallb_patch_speaker.stdout | default('') }}
 
-          ▶ Speaker nodeSelector (expected: {"metallb-speaker":"true"})
+          Speaker nodeSelector (expected: {"metallb-speaker":"true"})
           {{ metallb_speaker_selector.stdout | default('') }}
 
-          ▶ Pods
+          Pods
           {{ metallb_pods.stdout | default('') }}
 
-          ▶ IPAddressPools
+          IPAddressPools
           {{ metallb_pools.stdout | default('') }}
 
-          ▶ L2Advertisements
+          L2Advertisements
           {{ metallb_l2adv.stdout | default('') }}

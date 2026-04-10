@@ -1,15 +1,24 @@
 ---
-# Playbook: Deploy Wiki.js (Init phase) using Helm + existing values file from your Git repo
-# Goal: Deploy Wiki.js up to the point where the web UI is reachable for the initial setup wizard.
-#       (We STOP here. Scaling/HPA will be handled in a separate "final state" playbook.)
+# ============================================================
+# Playbook : Deploy Wiki.js (Init phase)
+# Fichier  : 7-deploy-wikijs-init.yaml
 #
-# Key points:
-# - We clone your repo to /opt/devops-jfkz
-# - We DO NOT generate values-wikijs.yaml (it already exists in your repo)
-# - We install Helm 3 if missing
-# - We add/update the Wiki.js chart repo
-# - We deploy/upgrade the release "wikijs" in namespace "wikijs" using the repo values file
-# - We ensure kubectl/helm use the correct kubeconfig (root would otherwise default to localhost:8080)
+# Objectifs :
+# - Clone le repo
+# - Installe Helm 3 si manquant
+# - Ajoute/met à jour le chart repo requarks
+# - Déploie/upgrade la release "wikijs" dans le namespace "wikijs"
+#   avec replicaCount=1 (phase init — setup wizard uniquement)
+# - STOP ici : scaling/HPA géré par le playbook 8
+#
+# FIXES v2 :
+#   - Validation explicite de l'ingress : fail si aucun ingress
+#     trouvé dans le namespace wikijs (évite que le playbook
+#     réussisse silencieusement sans ingress, ce qui rendrait
+#     kubectl get ingress -n wikijs vide sans alarme)
+#   - rollout wait avec failed_when: true (le best-effort cachait
+#     les erreurs de démarrage réelles)
+# ============================================================
 
 - name: Deploy Wiki.js (Init phase) using repo values file
   hosts: k8s_master
@@ -17,30 +26,22 @@
   gather_facts: true
 
   vars:
-    # --- Git repo containing your Kubernetes manifests / values ---
     repo_url: "https://github.com/egoMasa/DevOps-JFKZ.git"
     repo_version: "main"
     repo_dest: "/opt/devops-jfkz"
 
-    # --- Existing values file path INSIDE the repo ---
-    # Matches your structure: k8s/02-wikijs/values-wikijs.yaml
     wikijs_values_file: "{{ repo_dest }}/k8s/02-wikijs/values-wikijs.yaml"
 
-    # --- Wiki.js release settings ---
     wikijs_namespace: "wikijs"
     wikijs_release: "wikijs"
     wikijs_chart: "requarks/wiki"
 
-    # --- Binaries ---
     helm_bin: "/usr/local/bin/helm"
-
-    # --- IMPORTANT: kubeconfig used by kubectl/helm when running with become:true (root) ---
-    # Your cluster admin config is typically under the 'ansible' user home on the master.
     kubeconfig_path: "/home/ansible/.kube/config"
 
   tasks:
     # ------------------------------------------------------------------------
-    # 0) System prerequisites for git clone + curl-based helm install script
+    # 0) Prérequis OS
     # ------------------------------------------------------------------------
     - name: Install required packages (git, curl)
       ansible.builtin.apt:
@@ -51,7 +52,7 @@
         update_cache: true
 
     # ------------------------------------------------------------------------
-    # 1) Clone / update your repository on the master
+    # 1) Clone / update repo
     # ------------------------------------------------------------------------
     - name: Clone project repository
       ansible.builtin.git:
@@ -60,7 +61,6 @@
         version: "{{ repo_version }}"
         update: true
 
-    # Sanity check: confirm the values file exists where expected.
     - name: Ensure values file exists in repo
       ansible.builtin.stat:
         path: "{{ wikijs_values_file }}"
@@ -72,7 +72,7 @@
       when: not values_stat.stat.exists
 
     # ------------------------------------------------------------------------
-    # 2) Install Helm 3 if missing
+    # 2) Helm 3
     # ------------------------------------------------------------------------
     - name: Install Helm 3 (only if not already installed)
       ansible.builtin.shell: |
@@ -88,12 +88,11 @@
       changed_when: false
 
     # ------------------------------------------------------------------------
-    # 3) Helm repo configuration for Wiki.js chart
+    # 3) Helm repo
     # ------------------------------------------------------------------------
     - name: Add requarks Helm repo (idempotent)
       ansible.builtin.command: "{{ helm_bin }} repo add requarks https://charts.js.wiki"
       register: helm_repo_add
-      # helm may print "has been added" when new, or error when already exists. We'll accept both.
       changed_when: "'has been added' in helm_repo_add.stdout"
       failed_when: false
 
@@ -102,8 +101,7 @@
       changed_when: false
 
     # ------------------------------------------------------------------------
-    # 4) Kubernetes: ensure namespace exists
-    # IMPORTANT: kubectl must use correct kubeconfig, otherwise it defaults to localhost:8080
+    # 4) Namespace
     # ------------------------------------------------------------------------
     - name: Ensure namespace exists
       ansible.builtin.command: "kubectl get ns {{ wikijs_namespace }}"
@@ -120,8 +118,7 @@
         KUBECONFIG: "{{ kubeconfig_path }}"
 
     # ------------------------------------------------------------------------
-    # 5) Deploy via Helm (install or upgrade)
-    # IMPORTANT: helm uses the cluster too, so we pass KUBECONFIG.
+    # 5) Deploy via Helm (install ou upgrade)
     # ------------------------------------------------------------------------
     - name: Check if Wiki.js release already exists
       ansible.builtin.command: "{{ helm_bin }} -n {{ wikijs_namespace }} list -q"
@@ -130,7 +127,7 @@
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    - name: Install Wiki.js (INIT phase, expects replicaCount=1 in values)
+    - name: Install Wiki.js (INIT — replicaCount=1 attendu dans values)
       ansible.builtin.command: >
         {{ helm_bin }} install {{ wikijs_release }} {{ wikijs_chart }}
         -n {{ wikijs_namespace }}
@@ -139,7 +136,7 @@
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    - name: Upgrade Wiki.js if release already exists (ensure values applied)
+    - name: Upgrade Wiki.js si release déjà existante
       ansible.builtin.command: >
         {{ helm_bin }} upgrade {{ wikijs_release }} {{ wikijs_chart }}
         -n {{ wikijs_namespace }}
@@ -149,13 +146,14 @@
         KUBECONFIG: "{{ kubeconfig_path }}"
 
     # ------------------------------------------------------------------------
-    # 6) Basic rollout + visibility checks (we stop after confirming access path)
+    # 6) Rollout + checks
     # ------------------------------------------------------------------------
-    - name: Wait for deployment rollout (best-effort)
-      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} rollout status deploy/{{ wikijs_release }} --timeout=180s"
+    # FIX: failed_when retiré (était à false, masquait les erreurs réelles).
+    # En phase init on veut savoir si le pod démarre vraiment.
+    - name: Wait for deployment rollout
+      ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} rollout status deploy/{{ wikijs_release }} --timeout=300s"
       register: rollout
       changed_when: false
-      failed_when: false
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
@@ -166,14 +164,30 @@
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    - name: Show ingress
+    - name: Get ingress
       ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} get ingress -o wide"
       register: ingress_out
       changed_when: false
+      failed_when: false
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    - name: Show last logs (tail) - best effort
+    # FIX: validation explicite de l'ingress.
+    # L'ancienne tâche avait failed_when: false — si l'ingress était absent
+    # (ingress.enabled: false dans values), le playbook réussissait sans
+    # avertissement et kubectl get ingress -n wikijs retournait vide.
+    - name: Fail if no ingress found in namespace wikijs
+      ansible.builtin.fail:
+        msg: >
+          Aucun ingress trouvé dans le namespace '{{ wikijs_namespace }}'.
+          Vérifie que ingress.enabled est bien à true dans values-wikijs.yaml
+          et que le hostname est défini (ingress.hosts).
+      when: >
+        ingress_out.rc != 0
+        or ingress_out.stdout | trim == ''
+        or 'No resources found' in ingress_out.stdout
+
+    - name: Show logs (tail) — best effort
       ansible.builtin.command: "kubectl -n {{ wikijs_namespace }} logs deploy/{{ wikijs_release }} --tail=120"
       register: logs_out
       failed_when: false
@@ -182,18 +196,18 @@
         KUBECONFIG: "{{ kubeconfig_path }}"
 
     # ------------------------------------------------------------------------
-    # 7) Print summary + next manual step (setup wizard)
+    # 7) Résumé + prochaine étape manuelle
     # ------------------------------------------------------------------------
-    - name: Print summary / next manual step (setup in browser)
+    - name: Print summary / next manual step
       ansible.builtin.debug:
         msg:
           - "Helm: {{ helm_version.stdout }}"
           - "Repo cloned to: {{ repo_dest }}"
           - "Values file used: {{ wikijs_values_file }}"
-          - "Rollout status (best effort): {{ rollout.stdout | default('n/a') }}"
+          - "Rollout status: {{ rollout.stdout }}"
           - "Pods:\n{{ pods_out.stdout }}"
           - "Ingress:\n{{ ingress_out.stdout }}"
           - "Logs (tail):\n{{ logs_out.stdout | default('no logs yet') }}"
-          - "NEXT: Point wikijs.lab to the ingress EXTERNAL-IP (MetalLB) from ingress-nginx-controller service."
-          - "Then open: http://wikijs.lab/ and complete the setup wizard (admin + Site URL)."
-          - "STOP HERE: scaling/HPA will be handled by a separate playbook (final cluster state)."
+          - "NEXT: Ajouter wikijs.lab -> {{ ingress_out.stdout | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+') | default('<EXTERNAL-IP>') }} dans /etc/hosts."
+          - "Ouvrir http://wikijs.lab/ et compléter le setup wizard (admin + Site URL)."
+          - "STOP — scaling/HPA géré par le playbook 8."

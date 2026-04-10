@@ -1,9 +1,24 @@
 ---
-# Deploy Metrics Server in Kubernetes (required for HPA + kubectl top)
-# - Installs metrics-server (kube-system) if missing
-# - Applies a common lab fix: --kubelet-insecure-tls
-# - Waits for rollout
-# - Verifies metrics API by running `kubectl top nodes`
+# ============================================================
+# Playbook : Deploy Metrics Server
+# Fichier  : 6-deploy-metrics-server.yaml
+#
+# Objectifs :
+# - Installe metrics-server (kube-system) si manquant
+# - Applique le fix lab : --kubelet-insecure-tls
+# - Attend le rollout
+# - Vérifie l'API metrics via kubectl top nodes
+# - Vérifie kubectl top pods sur le cluster (pods kube-system)
+#   pour s'assurer que la collecte pod-level fonctionne avant
+#   que Wiki.js soit déployé
+#
+# FIXES v2 :
+#   - kubectl apply toujours (plus de condition sur apiservice_check.rc)
+#     -> idempotent par nature, garantit la version à jour
+#   - Ajout d'un check kubectl top pods -n kube-system (validation
+#     que les métriques pod-level remontent, pas seulement les nodes)
+#   - KUBECONFIG explicite sur toutes les tâches
+# ============================================================
 
 - name: Deploy metrics-server (cluster-level component)
   hosts: k8s_master
@@ -16,25 +31,20 @@
     metrics_deploy: "metrics-server"
     metrics_manifest_url: "https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
 
-    # Lab setting: kubelet often uses self-signed certs; this makes metrics-server work
+    # Lab : kubelet avec certs auto-signés
     enable_kubelet_insecure_tls: true
 
   tasks:
-    - name: Check if metrics APIService exists (metrics.k8s.io)
-      ansible.builtin.command: "kubectl get apiservice v1beta1.metrics.k8s.io"
-      register: apiservice_check
-      failed_when: false
-      changed_when: false
-      environment:
-        KUBECONFIG: "{{ kubeconfig_path }}"
-
-    - name: Install metrics-server manifest (only if missing)
+    # FIX: on applique toujours le manifest (idempotent kubectl apply).
+    # L'ancienne version conditionnait sur apiservice_check.rc != 0,
+    # ce qui empêchait la mise à jour si une version antérieure était
+    # déjà installée mais incorrecte.
+    - name: Apply metrics-server manifest (always, idempotent)
       ansible.builtin.command: "kubectl apply -f {{ metrics_manifest_url }}"
-      when: apiservice_check.rc != 0
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    # Wait a bit for deployment to appear (first install)
+    # Attendre que le déploiement apparaisse (first install)
     - name: Wait for metrics-server deployment to exist
       ansible.builtin.command: "kubectl -n {{ metrics_ns }} get deploy {{ metrics_deploy }}"
       register: deploy_exists
@@ -45,26 +55,22 @@
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    - name: Add --kubelet-insecure-tls arg (lab fix)
+    - name: Add --kubelet-insecure-tls arg (lab fix, idempotent)
       when: enable_kubelet_insecure_tls
       ansible.builtin.shell: |
         set -euo pipefail
-
-        # If the arg already exists, do nothing (idempotent)
         if kubectl -n {{ metrics_ns }} get deploy {{ metrics_deploy }} -o json \
           | grep -q -- '--kubelet-insecure-tls'; then
-          echo "metrics-server already has --kubelet-insecure-tls"
+          echo "already present"
           exit 0
         fi
-
         kubectl -n {{ metrics_ns }} patch deployment {{ metrics_deploy }} \
           --type='json' \
-          -p='[
-            {"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}
-          ]'
+          -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
       args:
         executable: /bin/bash
-      changed_when: true
+      register: tls_patch
+      changed_when: "'already present' not in tls_patch.stdout"
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
@@ -75,12 +81,28 @@
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
 
-    - name: Verify metrics API (kubectl top nodes)
+    # Vérifie que l'API metrics répond (node-level)
+    - name: Verify metrics API — kubectl top nodes
       ansible.builtin.command: "kubectl top nodes"
       register: top_nodes
       retries: 20
-      delay: 3
+      delay: 5
       until: top_nodes.rc == 0
+      changed_when: false
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
+
+    # FIX: vérification pod-level (kube-system).
+    # kubectl top nodes peut passer avant que les métriques pod-level
+    # soient collectées. Ce check garantit que kubelet expose bien
+    # les stats /stats/summary pour les pods, ce qui est requis
+    # pour que kubectl top pods -n wikijs fonctionne plus tard.
+    - name: Verify metrics API — kubectl top pods (kube-system)
+      ansible.builtin.command: "kubectl top pods -n {{ metrics_ns }}"
+      register: top_pods_ks
+      retries: 20
+      delay: 5
+      until: top_pods_ks.rc == 0
       changed_when: false
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"
@@ -90,3 +112,4 @@
         msg:
           - "metrics-server rollout: {{ rollout.stdout }}"
           - "kubectl top nodes:\n{{ top_nodes.stdout }}"
+          - "kubectl top pods -n kube-system:\n{{ top_pods_ks.stdout }}"

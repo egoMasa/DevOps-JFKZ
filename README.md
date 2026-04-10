@@ -439,19 +439,98 @@ kube-scheduler-tf-k8s-master               7m           65Mi
 metrics-server-6db6cd6674-zph8s            16m          16Mi
 ```
 
-```
+## Étape 7 — Wiki.js Init : déploiement initial (1 replica)
+
+```bash
 ansible-playbook -i inventory.ini 7-deploy-wikijs-init.yaml
+```
 
-- EMAIL : test@gmail.com
-- Password : azerty123
-- URL : http://wikijs.lab
-  
+**Vérifications :**
+
+```bash
+ssh ansible@192.168.122.150 "kubectl -n wikijs get pods"
+```
+
+```
+NAME                      READY   STATUS    RESTARTS   AGE
+wikijs-xxxxxxxxx-xxxxx    1/1     Running   0          Xs
+```
+
+```bash
+ssh ansible@192.168.122.150 "kubectl -n wikijs get ingress"
+```
+
+```
+NAME     CLASS   HOSTS        ADDRESS           PORTS   AGE
+wikijs   nginx   wikijs.lab   192.168.122.200   80      Xs
+```
+
+### ⚠ Étape manuelle obligatoire — Setup wizard Wiki.js
+
+Ajouter dans `/etc/hosts` (machine locale) :
+
+```
+192.168.122.200  wikijs.lab
+```
+
+Ouvrir `http://wikijs.lab` dans le navigateur et compléter le setup wizard :
+
+|Champ|Valeur|
+|---|---|
+|Email administrateur|test@gmail.com|
+|Mot de passe|azerty123|
+|Site URL|http://wikijs.lab|
+
+> **Ne pas lancer le playbook 8 avant d'avoir terminé le wizard.** Wiki.js doit avoir initialisé sa base de données et créé le compte admin.
+
+---
+
+## Étape 8 — Wiki.js Scale : état final HPA (2 pods min, 5 max)
+
+```bash
 ansible-playbook -i inventory.ini 8-deploy-wikijs-scale.yaml
+```
 
---- Vérifications 
+**Vérifications finales — état cible du cluster :**
+
+```bash
 ssh ansible@192.168.122.150
+```
+
+```bash
+kubectl get pods,svc,ingress,hpa -n wikijs
+```
+
+```
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/wikijs-xxxxxxxxx-xxxxx    1/1     Running   0          Xm
+pod/wikijs-xxxxxxxxx-xxxxx    1/1     Running   0          Xm
+
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/wikijs   ClusterIP   10.xxx.xxx.xxx  <none>        3000/TCP  Xm
+
+NAME                               CLASS   HOSTS        ADDRESS           PORTS   AGE
+ingress.networking.k8s.io/wikijs   nginx   wikijs.lab   192.168.122.200   80      Xm
+
+NAME                                    REFERENCE           TARGETS   MINPODS   MAXPODS   REPLICAS
+horizontalpodautoscaler.autoscaling/wikijs   Deployment/wikijs   2%/70%    2         5         2
+```
+
+```bash
+kubectl top pods -n wikijs
+```
+
+```
+NAME                     CPU(cores)   MEMORY(bytes)
+wikijs-xxxxxxxxx-xxxxx   Xm           XXXMi
+wikijs-xxxxxxxxx-xxxxx   Xm           XXXMi
+```
+
+```bash
+# Vue globale complète du cluster
 kubectl get nodes,pods,svc,ingress,ep,pvc,hpa -A
 ```
+
 
 # Partie 1 : Hyperviseur Proxmox
 ## 1.1) Notion d'hyperviseur
